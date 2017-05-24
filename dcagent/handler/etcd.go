@@ -1,21 +1,20 @@
 package handler
 import (
-	//"fmt"
 	"time"
 	"github.com/gwtony/gapi/log"
 	ec "github.com/coreos/etcd/clientv3"
-	//"github.com/coreos/etcd/mvcc/mvccpb"
+	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/coreos/etcd/etcdserver/api/v3rpc/rpctypes"
 	"golang.org/x/net/context"
 )
 
-type Etcd3Message struct {
+type EtcdMessage struct {
 	Key []byte
 	Value []byte
 	Version int64
 }
 
-type Etcd3Handler struct {
+type EtcdHandler struct {
 	user string
 	pwd string
 	auth bool
@@ -25,8 +24,8 @@ type Etcd3Handler struct {
 	log log.Log
 }
 
-func InitEtcd3Handler(addrs []string, to time.Duration, user, pwd string, auth bool, root string, log log.Log) *Etcd3Handler {
-	eh := &Etcd3Handler{
+func InitEtcdHandler(addrs []string, to time.Duration, user, pwd string, auth bool, root string, log log.Log) *EtcdHandler {
+	eh := &EtcdHandler{
 		addrs: addrs,
 		to: to,
 		user: user,
@@ -38,7 +37,7 @@ func InitEtcd3Handler(addrs []string, to time.Duration, user, pwd string, auth b
 	return eh
 }
 
-func (eh *Etcd3Handler) newClient() (*ec.Client, error) {
+func (eh *EtcdHandler) newClient() (*ec.Client, error) {
 	var err error
 	var cli *ec.Client
 	if eh.auth { // Auth enabled
@@ -75,7 +74,7 @@ func parseEtcdError(err error, log log.Log) {
 	}
 }
 
-func (eh *Etcd3Handler) Set(key, value string) error {
+func (eh *EtcdHandler) Set(key, value string) error {
 	cli, err := eh.newClient()
 	if err != nil {
 		eh.log.Error("Set new etcd client failed:", err)
@@ -95,7 +94,7 @@ func (eh *Etcd3Handler) Set(key, value string) error {
 	return nil
 }
 
-func (eh *Etcd3Handler) UnSet(key string) error {
+func (eh *EtcdHandler) UnSet(key string) error {
 	cli, err := eh.newClient()
 	if err != nil {
 		eh.log.Error("UnSet new etcd client failed:", err)
@@ -117,8 +116,8 @@ func (eh *Etcd3Handler) UnSet(key string) error {
 	return nil
 }
 
-func (eh *Etcd3Handler) Get(key string) (*Etcd3Message, error) {
-	var em Etcd3Message
+func (eh *EtcdHandler) Get(key string) (*EtcdMessage, error) {
+	var em EtcdMessage
 	cli, err := eh.newClient()
 	if err != nil {
 		eh.log.Error("Get new etcd client failed:", err)
@@ -147,8 +146,8 @@ func (eh *Etcd3Handler) Get(key string) (*Etcd3Message, error) {
 	return &em, nil
 }
 
-func (eh *Etcd3Handler) GetWithPrefix(key string) ([]*Etcd3Message, error) {
-	var ea []*Etcd3Message
+func (eh *EtcdHandler) GetWithPrefix(key string) ([]*EtcdMessage, error) {
+	var ea []*EtcdMessage
 
 	cli, err := eh.newClient()
 	if err != nil {
@@ -165,7 +164,7 @@ func (eh *Etcd3Handler) GetWithPrefix(key string) ([]*Etcd3Message, error) {
 		return ea, err
 	}
 	for _, ev := range resp.Kvs {
-		em := &Etcd3Message{Key: ev.Key, Value: ev.Value, Version: ev.Version}
+		em := &EtcdMessage{Key: ev.Key, Value: ev.Value, Version: ev.Version}
 		//eh.log.Debug("GetWithPrefix: (%s):%s\n", ev.Key, ev.Value)
 		ea = append(ea, em)
 	}
@@ -173,8 +172,8 @@ func (eh *Etcd3Handler) GetWithPrefix(key string) ([]*Etcd3Message, error) {
 	return ea, nil
 }
 
-func (eh *Etcd3Handler) GetWithPrefixLimit(key string, n int64) ([]*Etcd3Message, error) {
-	var ea []*Etcd3Message
+func (eh *EtcdHandler) GetWithPrefixLimit(key string, n int64) ([]*EtcdMessage, error) {
+	var ea []*EtcdMessage
 	var resp *ec.GetResponse
 
 
@@ -198,7 +197,7 @@ func (eh *Etcd3Handler) GetWithPrefixLimit(key string, n int64) ([]*Etcd3Message
 		return ea, err
 	}
 	for _, ev := range resp.Kvs {
-		em := &Etcd3Message{Key: ev.Key, Value: ev.Value, Version: ev.Version}
+		em := &EtcdMessage{Key: ev.Key, Value: ev.Value, Version: ev.Version}
 		//eh.log.Debug("GetWithPrefix: (%s):%s\n", ev.Key, ev.Value)
 		ea = append(ea, em)
 	}
@@ -206,9 +205,7 @@ func (eh *Etcd3Handler) GetWithPrefixLimit(key string, n int64) ([]*Etcd3Message
 	return ea, nil
 }
 
-
-/*
-func (eh *Etcd3Handler) Watch(key string, deal func(m *WatchMessage)) (error) {
+func (eh *EtcdHandler) Watch(key string, deal func(m *WatchMessage)) (error) {
 	var evtype string
 	cli, err := eh.newClient()
 	if err != nil {
@@ -240,7 +237,7 @@ func (eh *Etcd3Handler) Watch(key string, deal func(m *WatchMessage)) (error) {
 	return nil
 }
 
-func (eh *Etcd3Handler) WatchWithPrefix(key string, deal func(m *WatchMessage)) (error) {
+func (eh *EtcdHandler) WatchWithPrefix(key string, deal func(m *WatchMessage)) (error) {
 	var evtype string
 
 	cli, err := eh.newClient()
@@ -273,7 +270,7 @@ func (eh *Etcd3Handler) WatchWithPrefix(key string, deal func(m *WatchMessage)) 
 	return nil
 }
 
-//func (eh *Etcd3Handler) WatchStartWithPrefix(key string, deal func(m *WatchStartMessage)) (error) {
+//func (eh *EtcdHandler) WatchStartWithPrefix(key string, deal func(m *WatchStartMessage)) (error) {
 //	cli, err := eh.newClient()
 //	if err != nil {
 //		eh.log.Error("WatchWithPrefix new etcd client failed:", err)
@@ -298,7 +295,7 @@ func (eh *Etcd3Handler) WatchWithPrefix(key string, deal func(m *WatchMessage)) 
 //	return nil
 //}
 
-func (eh *Etcd3Handler) Cas(key, value string, version int64) (error) {
+func (eh *EtcdHandler) Cas(key, value string, version int64) (error) {
 	cli, err := eh.newClient()
 	if err != nil {
 		eh.log.Error("Cas new etcd client failed:", err)
@@ -324,7 +321,7 @@ func (eh *Etcd3Handler) Cas(key, value string, version int64) (error) {
 	return nil
 }
 
-func (eh *Etcd3Handler) CasLess(key, value string, version int64) (error) {
+func (eh *EtcdHandler) CasLess(key, value string, version int64) (error) {
 	cli, err := eh.newClient()
 	if err != nil {
 		eh.log.Error("Cas new etcd client failed:", err)
@@ -351,4 +348,4 @@ func (eh *Etcd3Handler) CasLess(key, value string, version int64) (error) {
 }
 
 //TODO: get top x result may use (WithSort, WithLimit)
-*/
+

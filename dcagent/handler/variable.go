@@ -6,11 +6,15 @@ const (
 
 	API_CONTENT_HEADER      = "application/json;charset=utf-8"
 
+	ETCD_EVENT_PUT          = "PUT"
+	ETCD_EVENT_DELETE       = "DELETE"
+
 	DEFAULT_ADMIN_TOKEN     = "LCONF_TOKEN"
 	ADMIN_TOKEN_HEADER      = "Admin-Token"
 	USER_TOKEN_HEADER       = "Conf-Token"
 
-	DCSERVER_LOC            = "/dconf"
+	DCONF_LOC               = "/dconf"
+	DEFAULT_DICT_SIZE       = 10000
 
 	ETCD_USER               = "dconf_user"
 	ETCD_PASSWORD           = "dconf_password"
@@ -47,29 +51,6 @@ const (
 	ETCD_IP_PADDING         = "alive"
 
 
-	//http location for service
-	SERVICE_ADD_LOC         = "/service/add"
-	SERVICE_DELETE_LOC      = "/service/delete"
-	SERVICE_READ_LOC        = "/service/read"
-
-	//http location for group
-	GROUP_ADD_LOC           = "/group/add"
-	GROUP_DELETE_LOC        = "/group/delete"
-	GROUP_UPDATE_LOC        = "/group/update"
-	GROUP_READ_LOC          = "/group/read"
-
-	//http location for member
-	MEMBER_ADD_LOC          = "/member/add"
-	MEMBER_DELETE_LOC       = "/member/delete"
-	MEMBER_MOVE_LOC         = "/member/move"
-	MEMBER_READ_LOC         = "/member/read"
-
 	//http location for config
-	CONFIG_ADD_LOC          = "/config/add"
-	CONFIG_DELETE_LOC       = "/config/delete"
-	CONFIG_READ_LOC         = "/config/read"
-	CONFIG_UPDATE_LOC       = "/config/update"
-
-	//http location for render
-	RENDER_DO_LOC           = "/render/do"
+	CONFIG_GET_LOC          = "/config/get"
 )

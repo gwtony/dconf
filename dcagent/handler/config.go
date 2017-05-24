@@ -21,6 +21,7 @@ type DCAgentConfig struct {
 
 	apiLoc        string        /* dcagent api location */
 
+	localhost     string
 
 	timeout       time.Duration
 }
@@ -60,8 +61,8 @@ func (conf *DCAgentConfig) ParseConfig(cf *config.Config) error {
 
 	conf.apiLoc, err = cf.C.GetString("dcagent", "api_location")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "[Info] [dcagent] Read conf: No api_location, use default location:", LCONF_LOC)
-		conf.apiLoc = LCONF_LOC
+		fmt.Fprintln(os.Stderr, "[Info] [dcagent] Read conf: No api_location, use default location:", DCONF_LOC)
+		conf.apiLoc = DCONF_LOC
 	}
 
 	conf.adminToken, err = cf.C.GetString("dcagent", "admin_token")
@@ -89,6 +90,12 @@ func (conf *DCAgentConfig) ParseConfig(cf *config.Config) error {
 	conf.eauthEnable = true
 	if conf.euser == "" || conf.epwd == "" {
 		conf.eauthEnable = false
+	}
+
+	conf.localhost, err = cf.C.GetString("dcagent", "host")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "[Error] [dcagent] Read conf: No host")
+		return err
 	}
 
 	return nil
