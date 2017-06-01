@@ -1,5 +1,37 @@
 # SCHEMA
 
+## Service Management
+### Add a service
+```
+POST /service/add HTTP/1.1
+Content-Type: application/json
+{
+	"service": $service,
+	"description": $description,
+}
+ 
+HTTP/1.1 200 OK
+{
+    "token": $token
+}
+```
+> Caution: service SHOULD NOT contains "/"
+
+### Delete a service
+
+```  
+POST /service/delete HTTP/1.1
+Token: $token
+Content-Type: application/json
+{
+    "service": $service
+}
+
+HTTP/1.1 200 OK
+```
+
+> Caution: delete will fail if service has any group("all" and "default" exclueded)
+
 ## Group Management
 ### Add a group
 ```
@@ -14,7 +46,7 @@ Content-Type: application/json
  
 HTTP/1.1 200 OK
 ```
-* Caution: group SHOULD NOT contains "/"
+> Caution: group SHOULD NOT contains "/"
 
 ### Delete a group
 ```
@@ -28,10 +60,9 @@ Content-Type: application/json
  
 HTTP/1.1 200 OK
 ```
-* Caution: 
-> Delete "deault" group is forbidden
+> Caution: delete "deault" group is forbidden
 
-> SHOULD NOT delete non-empty group
+> Caution: SHOULD NOT delete non-empty group
 
 ### Update a group
 Update the group desctiption
@@ -73,7 +104,7 @@ HTTP/1.1 200 OK
 ## Group Member Management
 ### Add a member
 Add a member to specifed service, only add to "all" group 
-* Caution: only be called by administrator
+> Caution: only be called by administrator
 ```
 POST /member/add HTTP/1.1
 Content-Type: application/json
@@ -87,7 +118,7 @@ HTTP/1.1 200 OK
 
 ### Delete a member
 Delete a member from specifed service and group
-* Caution: only be called by administrator
+> Caution: only be called by administrator
 ```
 POST /member/delete HTTP/1.1
 Token: $token
@@ -157,9 +188,9 @@ Content-Type: application/json
 HTTP/1.1 200 OK
 ```
 
-* Caution 
-> value NOT support binary, base64-encode if needed
-> key SHOULD NOT contains "/"
+> Caution: value NOT support binary, base64-encode if needed
+
+> Caution: key SHOULD NOT contains "/"
 
 ### Delete a config
 ```
@@ -232,6 +263,7 @@ HTTP/1.1 200 OK
   
 ## Render Management
 ### Do render
+* Need to set a tag for this render
 ```
 POST /render/do HTTP/1.1
 Token: $token
@@ -248,10 +280,10 @@ HTTP/1.1 200 OK
     "version": $version
 }
 ```
-* Set a tag for this render
 
 ### Read a render
 * If key is "*", it will read all keys in this condition(key, service)
+
 ```
 POST /render/read HTTP/1.1
 Token: $token
@@ -272,39 +304,6 @@ HTTP/1.1 200 OK
 	]
 }
 ```
-
-## Service Management
-### Add a service
-```
-POST /service/add HTTP/1.1
-Content-Type: application/json
-{
-	"service": $service,
-	"description": $description,
-}
- 
-HTTP/1.1 200 OK
-{
-    "token": $token
-}
-```
-* Caution: service SHOULD NOT contains "/"
-
-### Delete a service
-
-```  
-POST /service/delete HTTP/1.1
-Token: $token
-Content-Type: application/json
-{
-    "service": $service
-}
-
-HTTP/1.1 200 OK
-```
-
-* Caution: delete will fail if service has any group("all" and "default" exclueded)
- 
 
 ## Status Code 
 
