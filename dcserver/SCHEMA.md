@@ -29,10 +29,10 @@ Content-Type: application/json
 HTTP/1.1 200 OK
 ```
 * Caution: 
-** Delete "deault" group is forbidden
-** SHOULD NOT delete non-empty group
+> Delete "deault" group is forbidden
+> SHOULD NOT delete non-empty group
 
-### update a group
+### Update a group
 Update the group desctiption
 
 ```
@@ -72,7 +72,7 @@ HTTP/1.1 200 OK
 ## Group Member Management
 ### Add a member
 Add a member to specifed service, only add to "all" group 
-* Only be called by administrator
+* Caution: only be called by administrator
 ```
 POST /member/add HTTP/1.1
 Content-Type: application/json
@@ -86,7 +86,7 @@ HTTP/1.1 200 OK
 
 ### Delete a member
 Delete a member from specifed service and group
-* Only be called by administrator
+* Caution: only be called by administrator
 ```
 POST /member/delete HTTP/1.1
 Token: $token
@@ -157,8 +157,8 @@ HTTP/1.1 200 OK
 ```
 
 * Caution 
-- $value NOT support binary, base64-encode if needed
-- $key SHOULD NOT contains "/"
+> value NOT support binary, base64-encode if needed
+> key SHOULD NOT contains "/"
 
 ### Delete a config
 ```
@@ -270,6 +270,7 @@ HTTP/1.1 200 OK
 	}, ...
 	]
 }
+```
 
 ## Service Management
 ### Add a service
