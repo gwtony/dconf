@@ -8,8 +8,8 @@ A config management service
 
 ## Architecture
 
-            publish config(http api)
-    	     /
+           publish config(http api)
+             /
          dcserver
             |
            etcd
