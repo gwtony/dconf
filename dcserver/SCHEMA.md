@@ -30,6 +30,7 @@ HTTP/1.1 200 OK
 ```
 * Caution: 
 > Delete "deault" group is forbidden
+
 > SHOULD NOT delete non-empty group
 
 ### Update a group
@@ -134,7 +135,7 @@ HTTP/1.1 200 OK
 		"group": $group1,
 			"ip": [$ip1, ..., $ip2]
 		}, ...
-    ]
+	]
 }
 ```
 
