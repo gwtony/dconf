@@ -5,16 +5,17 @@ Dconf agent will watch config change from etcd
 ## Config
 Some config in file:
 * etcd_root: etcd root path, this should be matched with dcserver
-*api_location: agent http api location, default is '/dconf'
+* api_location: agent http api location, default is '/dconf'
 
-# Build
+## Build
 ```
 make
 cd dist/bin
 ./dcagent
 ```
 
-# Read config
+## Http API
+### Get config
 ```
 Request
 POST /config/get HTTP/1.1
