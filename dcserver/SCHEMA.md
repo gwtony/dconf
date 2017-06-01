@@ -246,7 +246,7 @@ HTTP/1.1 200 OK
  
 ### Copy config
 Copy configs between groups in same service
-* If key is "*", it will copy all config in source group
+> If key is "*", it will copy all config in source group
 ```
 POST /config/copy HTTP/1.1
 Token: $token
@@ -263,7 +263,7 @@ HTTP/1.1 200 OK
   
 ## Render Management
 ### Do render
-* Need to set a tag for this render
+Need to set a tag for this render
 ```
 POST /render/do HTTP/1.1
 Token: $token
@@ -282,7 +282,7 @@ HTTP/1.1 200 OK
 ```
 
 ### Read a render
-* If key is "*", it will read all keys in this condition(key, service)
+If key is "*", it will read all keys in this condition(key, service)
 
 ```
 POST /render/read HTTP/1.1
