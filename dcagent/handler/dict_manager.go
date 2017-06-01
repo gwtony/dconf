@@ -17,12 +17,14 @@ type DictManager struct {
 	log log.Log
 }
 
-func InitDictManager(host string, eh *EtcdHandler, log log.Log) {
+func InitDictManager(host string, eh *EtcdHandler, log log.Log) *DictManager {
 	DManager.host = host
-	DManager.prefix = eh.root + ETCD_HOST_VIEW + "/" + host
+	DManager.prefix = eh.root + ETCD_HOST_VIEW + "/" + host + "/"
 	DManager.eh = eh
 	DManager.log = log
 	DManager.dict = make(map[string]string, DEFAULT_DICT_SIZE)
+
+	return &DManager
 }
 
 func GetConfig(key string) string {
@@ -44,10 +46,10 @@ func (dm *DictManager) WatcherCallback(wm *WatchMessage) {
 
 	key := strings.TrimPrefix(wm.Key, dm.prefix)
 	if wm.Type == ETCD_EVENT_PUT {
-		dm.log.Debug("Watch add event")
+		dm.log.Debug("Watch add event, key is %s", key)
 		dm.dict[key] = wm.Value
 	} else if wm.Type == ETCD_EVENT_DELETE {
-		dm.log.Debug("Watch delete event")
+		dm.log.Debug("Watch delete event, key is %s", key)
 		if _, ok := dm.dict[key]; ok {
 			delete(dm.dict, key)
 		}
@@ -75,10 +77,10 @@ func (dm *DictManager) PullAll() error {
 	defer dm.lock.Unlock()
 
 	for _, m := range da {
-		key := strings.TrimPrefix(string(m.Key), dm.prefix)
+		key := strings.TrimPrefix(m.Key, dm.prefix)
 
 		dm.log.Debug("Got a key: %s", key)
-		dm.dict[key] = string(m.Value)
+		dm.dict[key] = m.Value
 	}
 
 	return nil

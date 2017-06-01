@@ -46,12 +46,28 @@ type RenderMessage struct {
 	Tag string `json:"tag"`
 }
 
+type RenderDeleteMessage RenderReadMessage
+type RenderReadMessage struct {
+	Service string `json:"service"`
+	Ip string `json:"host"`
+	Key string `json:"key"`
+}
+
+type RenderReadMeta struct {
+	Key string `json:"key"`
+	Value string `json:"value"`
+}
+
+type RenderReadReply struct {
+	Result []*RenderReadMeta
+}
+
 type ServiceReply struct {
 	Token string `json:"token"`
 }
 
 type GroupReply struct {
-	Result []GroupMeta `json:"result"`
+	Result []*GroupMeta `json:"result"`
 }
 
 type GroupMeta struct {
@@ -64,7 +80,7 @@ type MemberMeta struct {
 	Ip []string `json:ip`
 }
 type MemberReply struct {
-	Result []MemberMeta `json:"result"`
+	Result []*MemberMeta `json:"result"`
 }
 
 type ConfigReply struct {

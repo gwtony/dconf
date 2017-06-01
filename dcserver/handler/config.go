@@ -60,8 +60,8 @@ func (conf *DCServerConfig) ParseConfig(cf *config.Config) error {
 
 	conf.apiLoc, err = cf.C.GetString("dcserver", "api_location")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "[Info] [dcserver] Read conf: No api_location, use default location:", LCONF_LOC)
-		conf.apiLoc = LCONF_LOC
+		fmt.Fprintln(os.Stderr, "[Info] [dcserver] Read conf: No api_location, use default location:", DCSERVER_LOC)
+		conf.apiLoc = DCSERVER_LOC
 	}
 
 	conf.adminToken, err = cf.C.GetString("dcserver", "admin_token")

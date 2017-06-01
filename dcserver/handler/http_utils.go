@@ -38,7 +38,7 @@ func CheckToken(r *http.Request, eh *EtcdHandler, service string) (bool, error){
 		return false, errors.NotAcceptableError
 	}
 	sm := &ServiceMessage{}
-	err = json.Unmarshal(msg.Value, &sm)
+	err = json.Unmarshal([]byte(msg.Value), &sm)
 	if err != nil {
 		eh.log.Error("Parse server meta failed: %s", key)
 		return false, errors.InternalServerError

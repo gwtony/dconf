@@ -11,20 +11,13 @@ var AdminToken string
 
 // InitContext inits dconf context
 func InitContext(conf *config.Config, log log.Log) error {
-	cf := &LConfConfig{}
+	cf := &DCServerConfig{}
 	err := cf.ParseConfig(conf)
 	if err != nil {
 		log.Error("Lconf parse config failed")
 		return err
 	}
 	AdminToken = cf.adminToken
-
-	//mc, err := InitMysqlContext(cf.maddr, cf.dbname, cf.dbuser, cf.dbpwd, log)
-	//if err != nil {
-	//	log.Error("Dcron init mysql context failed")
-	//	return err
-	//}
-
 
 	eh := InitEtcdHandler(cf.eaddr, cf.eto, cf.euser, cf.epwd, cf.eauthEnable, cf.eRoot, log)
 
@@ -38,6 +31,7 @@ func InitContext(conf *config.Config, log log.Log) error {
 	api.AddHttpHandler(apiLoc + GROUP_DELETE_LOC, &GroupDeleteHandler{eh: eh, log: log})
 	api.AddHttpHandler(apiLoc + GROUP_UPDATE_LOC, &GroupUpdateHandler{eh: eh, log: log})
 	api.AddHttpHandler(apiLoc + GROUP_READ_LOC, &GroupReadHandler{eh: eh, log: log})
+	api.AddHttpHandler(apiLoc + GROUP_LIST_LOC, &GroupListHandler{eh: eh, log: log})
 
 	api.AddHttpHandler(apiLoc + MEMBER_ADD_LOC, &MemberAddHandler{eh: eh, log: log})
 	api.AddHttpHandler(apiLoc + MEMBER_DELETE_LOC, &MemberDeleteHandler{eh: eh, log: log})
@@ -51,8 +45,8 @@ func InitContext(conf *config.Config, log log.Log) error {
 	api.AddHttpHandler(apiLoc + CONFIG_COPY_LOC, &ConfigCopyHandler{eh: eh, log: log})
 
 	api.AddHttpHandler(apiLoc + RENDER_DO_LOC, &RenderDoHandler{eh: eh, log: log})
-
-	//ch.Run()
+	api.AddHttpHandler(apiLoc + RENDER_READ_LOC, &RenderReadHandler{eh: eh, log: log})
+	api.AddHttpHandler(apiLoc + RENDER_DELETE_LOC, &RenderDeleteHandler{eh: eh, log: log})
 
 	return nil
 }

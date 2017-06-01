@@ -18,7 +18,8 @@ func InitContext(conf *config.Config, log log.Log) error {
 	//Need not to auth
 	eh := InitEtcdHandler(cf.eaddr, cf.eto, "", "", false, cf.eRoot, log)
 
-	dm := &DictManager{host: cf.localhost, eh: eh, log: log}
+	//dm := &DictManager{host: cf.localhost, eh: eh, log: log}
+	dm := InitDictManager(cf.localhost, eh, log)
 	err = dm.PullAll()
 	if err != nil {
 		log.Error("Pull config from etcd failed:", err)

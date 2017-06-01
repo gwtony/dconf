@@ -28,7 +28,7 @@ const (
 
 	//ETCD_ARGS
 	ETCD_V2_PREFIX          = "/v2/keys"
-	ETCD_RECURSIEVE_ARGS    = "?recursive=true"
+	ETCD_RECURSIEVE_ARGS    = "?recursive=true&sort=true" //TODO: somewhere may not need sort
 	ETCD_DIR_RECU_ARGS      = "?dir=true&recursive=true"
 	ETCD_DIR_PADDING        = "true"
 
@@ -57,6 +57,7 @@ const (
 	GROUP_DELETE_LOC        = "/group/delete"
 	GROUP_UPDATE_LOC        = "/group/update"
 	GROUP_READ_LOC          = "/group/read"
+	GROUP_LIST_LOC          = "/group/list"
 
 	//http location for member
 	MEMBER_ADD_LOC          = "/member/add"
@@ -69,7 +70,10 @@ const (
 	CONFIG_DELETE_LOC       = "/config/delete"
 	CONFIG_READ_LOC         = "/config/read"
 	CONFIG_UPDATE_LOC       = "/config/update"
+	CONFIG_COPY_LOC         = "/config/copy"
 
 	//http location for render
 	RENDER_DO_LOC           = "/render/do"
+	RENDER_READ_LOC         = "/render/read"
+	RENDER_DELETE_LOC       = "/render/delete"
 )

@@ -50,7 +50,7 @@ func (h *ServiceAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		api.ReturnError(r, w, errors.Jerror("Parse from body failed"), errors.BadRequestError, h.log)
 		return
 	}
-	h.log.Info("Service add request: (%s), client: %s", data, r.RemoteAddr)
+	h.log.Info("Service add request: (%s), client: %s", string(result), r.RemoteAddr)
 
 	//check args
 	if data.Service == "" {
@@ -65,11 +65,13 @@ func (h *ServiceAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !IsAdmin(r) {
+		h.log.Debug("return a failed")
 		api.ReturnError(r, w, errors.Jerror("Authentication failed"), errors.UnauthorizedError, h.log)
 		return
 	}
 	//check service exists
 	key := h.eh.root + ETCD_SERVICE_META + "/" + data.Service
+	h.log.Debug("key is ", key)
 	msg, err := h.eh.Get(key)
 	if err != nil {
 		h.log.Error("Service add check serivce key %s failed", key)
@@ -85,7 +87,7 @@ func (h *ServiceAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	//generate token
 	token, _ := utils.NewToken()
 
-	sm := &ServiceMessage{Service: data.Service, Description: data.Description, Token: data.Token}
+	sm := &ServiceMessage{Service: data.Service, Description: data.Description, Token: token}
 	smv, _ := json.Marshal(sm)
 
 	//set service meta
@@ -97,18 +99,10 @@ func (h *ServiceAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	////set srv view
-	//key = h.eh.root + ETCD_SERVICE_META + "/" + data.Service
-	////key = h.eh.root + ETCD_SERVICE_VIEW + "/" + data.Service
-	//_, err := h.eh.Set(key, token) //TODO: set dir and default group
-	//if err != nil {
-	//	h.log.Error("Service add set key %s failed", key)
-	//	api.ReturnError(r, w, errors.Jerror("Init service view to backend failed"), errors.BadGatewayError, h.log)
-	//	return
-	//}
 	sr := &ServiceReply{}
 	sr.Token = token
 	srv, _ := json.Marshal(sr)
+	h.log.Debug("token is %s", token)
 
 	api.ReturnResponse(r, w, string(srv), h.log)
 }
@@ -135,17 +129,12 @@ func (h *ServiceDeleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		api.ReturnError(r, w, errors.Jerror("Parse from body failed"), errors.BadRequestError, h.log)
 		return
 	}
-	h.log.Info("Service add request: (%s), client: %s", data, r.RemoteAddr)
+	h.log.Info("Service delete request: (%s), client: %s", string(result), r.RemoteAddr)
 
 	//check args
 	if data.Service == "" {
 		h.log.Error("Service not exist, client: %s", r.RemoteAddr)
 		api.ReturnError(r, w, errors.Jerror("Service not exist"), errors.BadRequestError, h.log)
-		return
-	}
-	if data.Description == "" {
-		h.log.Error("Read from body failed, client: %s", r.RemoteAddr)
-		api.ReturnError(r, w, errors.Jerror("Description not exist"), errors.BadRequestError, h.log)
 		return
 	}
 
@@ -154,24 +143,59 @@ func (h *ServiceDeleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	//unset token
-	key := h.eh.root + ETCD_SERVICE_META + "/" + data.Service
-	err = h.eh.UnSet(key)
+	// Cannot delete if group is more than 'default' and 'all'
+	key := h.eh.root + ETCD_GROUP_META + "/" + data.Service
+	msg, err := h.eh.GetWithPrefix(key)
 	if err != nil {
-		h.log.Error("Service delete unset key %s failed", key)
-		api.ReturnError(r, w, errors.Jerror("Delete service to backend failed"), errors.BadGatewayError, h.log)
+		h.log.Error("Service delete check group failed: key is %s", key)
+		api.ReturnError(r, w, errors.Jerror("Delete service check group failed"), errors.BadGatewayError, h.log)
+		return
+	}
+	if msg != nil && len(msg) > 2 { //group is more than 'default' and 'all'
+		h.log.Info("Service delete exists more group")
+		api.ReturnError(r, w, errors.Jerror("Delete service need delete group first"), errors.NotAcceptableError, h.log)
 		return
 	}
 
-	//TODO: unset or ...
+	//unset token
+	key = h.eh.root + ETCD_SERVICE_META + "/" + data.Service
+	err = h.eh.UnSet(key)
+	if err != nil {
+		h.log.Error("Service delete unset service meta key %s failed", key)
+		api.ReturnError(r, w, errors.Jerror("Delete service meta to backend failed"), errors.BadGatewayError, h.log)
+		return
+	}
+	h.log.Debug("Unset service meta done")
+
 	//unset srv view
 	key = h.eh.root + ETCD_SERVICE_VIEW + "/" + data.Service
-	err = h.eh.UnSetDir(key) //TODO: unset dir recurisve
+	err = h.eh.UnSetDir(key)
 	if err != nil {
-		h.log.Error("Service delete unset key %s failed", key)
+		h.log.Error("Service delete unset service view key %s failed", key)
 		api.ReturnError(r, w, errors.Jerror("Delete service view to backend failed"), errors.BadGatewayError, h.log)
 		return
 	}
+	h.log.Debug("Unset service view done")
+
+	//unset group view
+	key = h.eh.root + ETCD_GROUP_VIEW + "/" + data.Service
+	err = h.eh.UnSetDir(key)
+	if err != nil {
+		h.log.Error("Service delete unset group view key %s failed", key)
+		api.ReturnError(r, w, errors.Jerror("Delete service group view to backend failed"), errors.BadGatewayError, h.log)
+		return
+	}
+	h.log.Debug("Unset group view done")
+
+	//unset group meta
+	key = h.eh.root + ETCD_GROUP_META + "/" + data.Service
+	err = h.eh.UnSetDir(key)
+	if err != nil {
+		h.log.Error("Service delete unset group meta key %s failed", key)
+		api.ReturnError(r, w, errors.Jerror("Delete service group meta to backend failed"), errors.BadGatewayError, h.log)
+		return
+	}
+	h.log.Debug("Unset group meta done")
 
 	api.ReturnResponse(r, w, "", h.log)
 }
@@ -198,7 +222,7 @@ func (h *ServiceReadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		api.ReturnError(r, w, errors.Jerror("Parse from body failed"), errors.BadRequestError, h.log)
 		return
 	}
-	h.log.Info("Service read request: (%s), client: %s", data, r.RemoteAddr)
+	h.log.Info("Service read request: (%s), client: %s", string(result), r.RemoteAddr)
 
 	//check args
 	if data.Service == "" {
@@ -215,12 +239,12 @@ func (h *ServiceReadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	key := h.eh.root + ETCD_SERVICE_META + "/" + data.Service
 	msg, err := h.eh.Get(key)
 	if err != nil {
-		h.log.Error("Service read get key %s failed", key)
+		h.log.Error("Service read get servicer meta key %s failed", key)
 		api.ReturnError(r, w, errors.Jerror("Read service to backend failed"), errors.BadGatewayError, h.log)
 		return
 	}
 	if msg == nil {
-		h.log.Error("Service read get key %s failed", key)
+		h.log.Error("Service read got no msg key %s failed", key)
 		api.ReturnError(r, w, errors.Jerror("Read service to backend failed"), errors.BadGatewayError, h.log)
 		return
 	}

@@ -9,8 +9,10 @@ import (
 )
 
 type EtcdMessage struct {
-	Key []byte
-	Value []byte
+	Key string
+	Value string
+	//Key []byte
+	//Value []byte
 	Version int64
 }
 
@@ -74,6 +76,10 @@ func parseEtcdError(err error, log log.Log) {
 	}
 }
 
+func (eh *EtcdHandler) SetDir(key, value string) error {
+	return eh.Set(key, value)
+}
+
 func (eh *EtcdHandler) Set(key, value string) error {
 	cli, err := eh.newClient()
 	if err != nil {
@@ -92,6 +98,29 @@ func (eh *EtcdHandler) Set(key, value string) error {
 	}
 
 	return nil
+}
+
+func (eh *EtcdHandler) UnSetDir(key string) error {
+	cli, err := eh.newClient()
+	if err != nil {
+		eh.log.Error("UnSet new etcd client failed:", err)
+		return err
+	}
+	defer cli.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), eh.to)
+	defer cancel()
+
+	eh.log.Debug("to unset dir key: %s", key)
+	dresp, err := cli.Delete(ctx, key, ec.WithPrefix())
+	if err != nil {
+		parseEtcdError(err, eh.log)
+		return err
+	}
+	eh.log.Info("Delete %d keys", dresp.Deleted)
+
+	return nil
+
 }
 
 func (eh *EtcdHandler) UnSet(key string) error {
@@ -132,15 +161,14 @@ func (eh *EtcdHandler) Get(key string) (*EtcdMessage, error) {
 		parseEtcdError(err, eh.log)
 		return nil, err
 	}
-	//for _, ev := range resp.Kvs {
-	//	fmt.Printf("%s : %s\n", ev.Key, ev.Value)
-	//}
-	//fmt.Println(resp.Kvs)
+
 	if len(resp.Kvs) == 0 { //Not found
 		return nil, nil
 	}
-	em.Key = resp.Kvs[0].Key
-	em.Value = resp.Kvs[0].Value
+	em.Key = string(resp.Kvs[0].Key)
+	em.Value = string(resp.Kvs[0].Value)
+	//em.Key = resp.Kvs[0].Key
+	//em.Value = resp.Kvs[0].Value
 	em.Version = resp.Kvs[0].Version
 
 	return &em, nil
@@ -164,7 +192,8 @@ func (eh *EtcdHandler) GetWithPrefix(key string) ([]*EtcdMessage, error) {
 		return ea, err
 	}
 	for _, ev := range resp.Kvs {
-		em := &EtcdMessage{Key: ev.Key, Value: ev.Value, Version: ev.Version}
+		//em := &EtcdMessage{Key: ev.Key, Value: ev.Value, Version: ev.Version}
+		em := &EtcdMessage{Key: string(ev.Key), Value: string(ev.Value), Version: ev.Version}
 		//eh.log.Debug("GetWithPrefix: (%s):%s\n", ev.Key, ev.Value)
 		ea = append(ea, em)
 	}
@@ -197,7 +226,8 @@ func (eh *EtcdHandler) GetWithPrefixLimit(key string, n int64) ([]*EtcdMessage, 
 		return ea, err
 	}
 	for _, ev := range resp.Kvs {
-		em := &EtcdMessage{Key: ev.Key, Value: ev.Value, Version: ev.Version}
+		//em := &EtcdMessage{Key: ev.Key, Value: ev.Value, Version: ev.Version}
+		em := &EtcdMessage{Key: string(ev.Key), Value: string(ev.Value), Version: ev.Version}
 		//eh.log.Debug("GetWithPrefix: (%s):%s\n", ev.Key, ev.Value)
 		ea = append(ea, em)
 	}
@@ -346,6 +376,3 @@ func (eh *EtcdHandler) CasLess(key, value string, version int64) (error) {
 
 	return nil
 }
-
-//TODO: get top x result may use (WithSort, WithLimit)
-

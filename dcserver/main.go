@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"time"
 	"github.com/gwtony/gapi/api"
-	"git.lianjia.com/lianjia-sysop/lconf/handler"
+	"github.com/gwtony/dconf/dcserver/handler"
 )
 
 func main() {
-	err := api.Init("lconf.conf")
+	err := api.Init("dcserver.conf")
 	if err != nil {
 		fmt.Println("[Error] Init api failed")
 		return
@@ -18,7 +18,7 @@ func main() {
 
 	err = handler.InitContext(config, log)
 	if err != nil {
-		fmt.Println("[Error] Init lconf failed")
+		fmt.Println("[Error] Init dcserver failed")
 		time.Sleep(time.Second)
 		return
 	}

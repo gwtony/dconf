@@ -2,13 +2,18 @@ package handler
 
 type ConfigMessage struct {
 	Service string `json:"service"`
-	Group string `json:"group"`
+	Ip string `json:"ip"`
+	Key string `json:"key"`
+	Value string `json:"value"`
+}
+
+type ConfigMeta struct {
 	Key string `json:"key"`
 	Value string `json:"value"`
 }
 
 type ConfigReplyMessage struct {
-	Result string `json:"result"`
+	Result []*ConfigMeta `json:"result"`
 }
 
 type WatchMessage struct {
