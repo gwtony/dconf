@@ -1,12 +1,11 @@
-Dconf Agent
-===========
+# Dconf Agent
 
-# Dconf agent will watch config change from etcd
+Dconf agent will watch config change from etcd
 
-# Config
+## Config
 Some config in file:
-## etcd_root: etcd root path, this should be matched with dcserver
-## api_location: agent http api location, default is '/dconf'
+* etcd_root: etcd root path, this should be matched with dcserver
+*api_location: agent http api location, default is '/dconf'
 
 # Build
 ```
