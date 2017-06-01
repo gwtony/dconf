@@ -35,7 +35,7 @@ Response
 	]
 }
 ```
-service: service name
-key: config name
-value: config value
+* service: service name
+* key: config name
+* value: config value
 
