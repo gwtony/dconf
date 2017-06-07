@@ -9,12 +9,12 @@ import (
 var DManager DictManager
 
 type DictManager struct {
-	lock sync.RWMutex
-	host string
+	lock   sync.RWMutex
+	host   string
 	prefix string
-	eh  *EtcdHandler
-	dict map[string]string
-	log log.Log
+	eh     *EtcdHandler
+	dict   map[string]string
+	log    log.Log
 }
 
 func InitDictManager(host string, eh *EtcdHandler, log log.Log) *DictManager {

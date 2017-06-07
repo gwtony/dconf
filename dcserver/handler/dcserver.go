@@ -9,12 +9,12 @@ import (
 
 var AdminToken string
 
-// InitContext inits dconf context
+// InitContext inits dcserver context
 func InitContext(conf *config.Config, log log.Log) error {
 	cf := &DCServerConfig{}
 	err := cf.ParseConfig(conf)
 	if err != nil {
-		log.Error("Lconf parse config failed")
+		log.Error("dcserver parse config failed")
 		return err
 	}
 	AdminToken = cf.adminToken

@@ -265,9 +265,8 @@ func (h *ConfigReadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ckv := &ConfigKV{}
 		h.log.Debug("key is %s", m.Key)
 		arr := strings.Split(m.Key, "/")
-		// key can contain "/"
-		//ckv.Key = arr[len(arr) - 1]
-		ckv.Key = strings.Join(arr[5:], "/")
+		// key cannot contain "/"
+		ckv.Key = arr[len(arr) - 1]
 		ckv.Value = string(m.Value)
 		cr.Result = append(cr.Result, ckv)
 	}

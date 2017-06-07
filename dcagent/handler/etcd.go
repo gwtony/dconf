@@ -9,21 +9,19 @@ import (
 )
 
 type EtcdMessage struct {
-	Key string
-	Value string
-	//Key []byte
-	//Value []byte
+	Key     string
+	Value   string
 	Version int64
 }
 
 type EtcdHandler struct {
-	user string
-	pwd string
-	auth bool
+	user  string
+	pwd   string
+	auth  bool
 	addrs []string
-	root string
-	to time.Duration
-	log log.Log
+	root  string
+	to    time.Duration
+	log   log.Log
 }
 
 func InitEtcdHandler(addrs []string, to time.Duration, user, pwd string, auth bool, root string, log log.Log) *EtcdHandler {

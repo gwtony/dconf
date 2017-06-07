@@ -109,9 +109,8 @@ func (h *RenderDoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	for _, m := range gmsg {
 		arr := strings.Split(string(m.Key), "/")
-		// key can contain "/"
-		//ip = arr[len(arr) - 1]
-		ip = strings.Join(arr[5:], "/")
+		// key cannot contain "/"
+		ip = arr[len(arr) - 1]
 		key = h.eh.root + ETCD_HOST_VIEW + "/" + ip + "/" + data.Service + "/" + data.Key
 		err = h.eh.Set(key, string(kmsg.Value))
 		if err != nil {

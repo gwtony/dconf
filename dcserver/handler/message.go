@@ -1,65 +1,65 @@
 package handler
 
 type ServiceMessage struct {
-	Service string `json:"service"`
+	Service     string `json:"service"`
 	Description string `json:"description"`
-	Token string `json:"token"`
+	Token       string `json:"token"`
 }
 
 type GroupMessage struct {
-	Service string `json:"service"`
-	Group string `json:"group"`
+	Service     string `json:"service"`
+	Group       string `json:"group"`
 	Description string `json:"description"`
 }
 
 type MemberMessage struct {
 	Service string `json:"service"`
-	Group string `json:"group"`
-	Ip string `json:"ip"`
+	Group   string `json:"group"`
+	Ip      string `json:"ip"`
 }
 
 type MemberMoveMessage struct {
 	Service string `json:"service"`
-	From string `json:"from"`
-	To string `json:"to"`
-	Ip string `json:"ip"`
+	From    string `json:"from"`
+	To      string `json:"to"`
+	Ip      string `json:"ip"`
 }
 
 type ConfigMessage struct {
 	Service string `json:"service"`
-	Group string `json:"group"`
-	Key string `json:"key"`
-	Value string `json:"value"`
+	Group   string `json:"group"`
+	Key     string `json:"key"`
+	Value   string `json:"value"`
 }
 
 type ConfigCopyMessage struct {
 	Service string `json:"service"`
-	From string `json:"from"`
-	To string `json:"to"`
-	Key string `json:"key"`
+	From    string `json:"from"`
+	To      string `json:"to"`
+	Key     string `json:"key"`
 }
 
 type RenderMessage struct {
 	Service string `json:"service"`
-	Group string `json:"group"`
-	Key string `json:"key"`
-	Tag string `json:"tag"`
+	Group   string `json:"group"`
+	Key     string `json:"key"`
+	Tag     string `json:"tag"`
 }
 
 type RenderDeleteMessage RenderReadMessage
 type RenderReadMessage struct {
 	Service string `json:"service"`
-	Ip string `json:"host"`
-	Key string `json:"key"`
+	Ip      string `json:"host"`
+	Key     string `json:"key"`
 }
 
 type RenderReadMeta struct {
-	Key string `json:"key"`
+	Key   string `json:"key"`
 	Value string `json:"value"`
 }
 
 type RenderReadReply struct {
-	Result []*RenderReadMeta
+	Result []*RenderReadMeta `json:"result"`
 }
 
 type ServiceReply struct {
@@ -71,13 +71,13 @@ type GroupReply struct {
 }
 
 type GroupMeta struct {
-	Group string `json:"group"`
+	Group       string `json:"group"`
 	Description string `json:"description"`
 }
 
 type MemberMeta struct {
-	Group string `json:"group"`
-	Ip []string `json:ip`
+	Group string   `json:"group"`
+	Ip    []string `json:ip`
 }
 type MemberReply struct {
 	Result []*MemberMeta `json:"result"`
@@ -88,7 +88,7 @@ type ConfigReply struct {
 }
 
 type ConfigKV struct {
-	Key string `json:"key"`
+	Key   string `json:"key"`
 	Value string `json:"value"`
 }
 

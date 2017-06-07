@@ -26,12 +26,6 @@ const (
 	DEFAULT_ETCD_TIMEOUT    = 3
 	DEFAULT_ETCD_ROOT       = "/dconf"
 
-	//ETCD_ARGS
-	ETCD_V2_PREFIX          = "/v2/keys"
-	ETCD_RECURSIEVE_ARGS    = "?recursive=true&sort=true" //TODO: somewhere may not need sort
-	ETCD_DIR_RECU_ARGS      = "?dir=true&recursive=true"
-	ETCD_DIR_PADDING        = "true"
-
 	// ETCD table schema
 	ETCD_SERVICE_VIEW       = "/svc_view"
 	ETCD_GROUP_VIEW         = "/group_view"
