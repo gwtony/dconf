@@ -51,7 +51,7 @@ func (h *MemberAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	h.log.Info("Member add request: (%s) from client: %s", string(result), r.RemoteAddr)
 
-	if data.Service == "" {
+	if data.Service == "" || strings.Contains(data.Service, "/") {
 		api.ReturnError(r, w, errors.Jerror("No Service"), errors.BadRequestError, h.log)
 		return
 	}
@@ -63,7 +63,7 @@ func (h *MemberAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// check admin
 	admin := IsAdmin(r)
 	if !admin {
-		api.ReturnError(r, w, errors.Jerror("Authentication failed"), err, h.log)
+		api.ReturnError(r, w, errors.Jerror("Authentication failed"), errors.UnauthorizedError, h.log)
 		return
 	}
 
@@ -83,27 +83,22 @@ func (h *MemberAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	key = h.eh.root + ETCD_GROUP_VIEW + "/" + data.Service + ETCD_GROUP_ALL + "/" + data.Ip
 	msg, err = h.eh.Get(key)
 	if err != nil {
+		h.log.Error("Member add check ip: %s failed", data.Ip)
 		api.ReturnError(r, w, errors.Jerror("Cannot check host with backend"), errors.BadGatewayError, h.log)
 		return
 	}
 	if msg != nil {
-		api.ReturnError(r, w, errors.Jerror("Member add ip exist"), errors.NoContentError, h.log)
+		h.log.Info("Member add ip: %s already exists", data.Ip)
+		api.ReturnError(r, w, errors.Jerror("Member add ip exist"), errors.ConflictError, h.log)
 		return
 	}
-
-	////chech conflict
-	//if strings.Compare(string(msg.Value), data.Ip) == 0 {
-	//	h.log.Info("Ip exists in service: ", data.Service)
-	//	api.ReturnError(r, w, errors.Jerror("Member add ip conflict"), errors.BadRequestError, h.log)
-	//	return
-	//}
 
 	//set to all group
 	key = h.eh.root + ETCD_GROUP_VIEW + "/" + data.Service + ETCD_GROUP_ALL + "/" + data.Ip
 	value := ETCD_IP_PADDING
 	err = h.eh.Set(key, value)
 	if err != nil {
-		h.log.Info("Member add ip to all failed")
+		h.log.Error("Member add set ip: %s to all failed", data.Ip)
 		api.ReturnError(r, w, errors.Jerror("Member add ip failed"), errors.BadGatewayError, h.log)
 		return
 	}
@@ -113,7 +108,7 @@ func (h *MemberAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	value = ETCD_IP_PADDING
 	err = h.eh.Set(key, value)
 	if err != nil {
-		h.log.Error("Member add ip to default failed")
+		h.log.Error("Member add set ip: %s to default failed", data.Ip)
 		api.ReturnError(r, w, errors.Jerror("Member add ip failed"), errors.BadGatewayError, h.log)
 		return
 	}
@@ -154,7 +149,7 @@ func (h *MemberDeleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		api.ReturnError(r, w, errors.Jerror("No ip"), errors.BadRequestError, h.log)
 		return
 	}
-	if strings.Compare(data.Group, "all") == 0 {
+	if data.Group == "all" {
 		api.ReturnError(r, w, errors.Jerror("Group name invalid"), errors.BadRequestError, h.log)
 		return
 	}
@@ -171,12 +166,12 @@ func (h *MemberDeleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	key := h.eh.root + ETCD_GROUP_VIEW + "/" + data.Service + ETCD_GROUP_ALL + "/" + data.Ip
 	msg, err := h.eh.Get(key)
 	if err != nil {
-		h.log.Error("Member delete get group all failed")
+		h.log.Error("Member delete get ip: %s from group all failed", data.Ip)
 		api.ReturnError(r, w, errors.Jerror("Cannot check host with backend"), errors.BadGatewayError, h.log)
 		return
 	}
 	if msg == nil {
-		h.log.Error("Member delete get group all found no ip")
+		h.log.Info("Member delete get group all found no ip")
 		api.ReturnError(r, w, errors.Jerror("Member delete ip not exist"), errors.NoContentError, h.log)
 		return
 	}
@@ -184,7 +179,7 @@ func (h *MemberDeleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	key = h.eh.root + ETCD_GROUP_VIEW + "/" + data.Service + "/" + data.Group + "/" + data.Ip
 	err = h.eh.UnSet(key)
 	if err != nil {
-		h.log.Error("Member delete unset ip from group failed")
+		h.log.Error("Member delete unset ip: %s from group failed", data.Ip)
 		api.ReturnError(r, w, errors.Jerror("Member delete ip from group failed"), errors.BadGatewayError, h.log)
 		return
 	}
@@ -192,7 +187,7 @@ func (h *MemberDeleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	key = h.eh.root + ETCD_GROUP_VIEW + "/" + data.Service + ETCD_GROUP_ALL + "/" + data.Ip
 	err = h.eh.UnSet(key)
 	if err != nil {
-		h.log.Error("Member delete unset ip from all failed")
+		h.log.Error("Member delete unset ip: %s from all failed", data.Ip)
 		api.ReturnError(r, w, errors.Jerror("Member delete ip from all failed"), errors.BadGatewayError, h.log)
 		return
 	}
@@ -232,7 +227,7 @@ func (h *MemberReadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	wildcard := false
 	wc := "*"
-	if strings.Compare(data.Group, wc) == 0 {
+	if data.Group == wc {
 		wildcard = true
 	}
 
@@ -251,6 +246,7 @@ func (h *MemberReadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	key := h.eh.root + ETCD_SERVICE_META + "/" + data.Service
 	msg, err := h.eh.Get(key)
 	if err != nil {
+		h.log.Error("Member read get service: %s failed", data.Service)
 		api.ReturnError(r, w, errors.Jerror("Cannot check service with backend"), errors.BadGatewayError, h.log)
 		return
 	}
@@ -267,10 +263,12 @@ func (h *MemberReadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	msgarr, err := h.eh.GetWithPrefix(key)
 	if err != nil {
-		api.ReturnError(r, w, errors.Jerror("Cannot check host with backend"), errors.BadGatewayError, h.log)
+		h.log.Error("Member read get key: %s failed", key)
+		api.ReturnError(r, w, errors.Jerror("Cannot check ip with backend"), errors.BadGatewayError, h.log)
 		return
 	}
 	if msgarr == nil || len(msgarr) == 0 {
+		h.log.Info("Member read ip: %s not exist", data.Ip)
 		api.ReturnError(r, w, errors.Jerror("Member read ip not exist"), errors.NoContentError, h.log)
 		return
 	}
@@ -293,9 +291,7 @@ func (h *MemberReadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		mm.Ip = append(mm.Ip, arr[len(arr) - 1])
 
-		h.log.Info("m is", m)
-		h.log.Info("m.key is ", m.Key)
-		h.log.Info("m.key is ", m.Value)
+		h.log.Debug("Member read m.key: %s, m.value: %s", m.Key, m.Value)
 	}
 	mr.Result = append(mr.Result, mm)
 	h.log.Debug(mr)
@@ -325,7 +321,7 @@ func (h *MemberMoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	h.log.Info("Member add request: (%s) from client: %s", string(result), r.RemoteAddr)
 
-	if data.Service == "" {
+	if data.Service == "" || strings.Contains(data.Service, "/") {
 		api.ReturnError(r, w, errors.Jerror("Invalid service"), errors.BadRequestError, h.log)
 		return
 	}
@@ -333,19 +329,19 @@ func (h *MemberMoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		api.ReturnError(r, w, errors.Jerror("Invalid ip"), errors.BadRequestError, h.log)
 		return
 	}
-	if data.From == "" {
+	if data.From == "" || strings.Contains(data.From, "/") {
 		api.ReturnError(r, w, errors.Jerror("Invalid from"), errors.BadRequestError, h.log)
 		return
 	}
-	if data.To == "" {
+	if data.To == "" || strings.Contains(data.To, "/") {
 		api.ReturnError(r, w, errors.Jerror("Invalid to"), errors.BadRequestError, h.log)
 		return
 	}
-	if strings.Compare(data.From, "all") == 0 {
+	if data.From == "all" {
 		api.ReturnError(r, w, errors.Jerror("Group from invalid"), errors.BadRequestError, h.log)
 		return
 	}
-	if strings.Compare(data.To, "all") == 0 {
+	if data.To == "all" {
 		api.ReturnError(r, w, errors.Jerror("Group to invalid"), errors.BadRequestError, h.log)
 		return
 	}
@@ -355,7 +351,6 @@ func (h *MemberMoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !admin {
 		ok, err := CheckToken(r, h.eh, data.Service)
 		if !ok {
-			h.log.Error("Member move token not match")
 			api.ReturnError(r, w, errors.Jerror("Authentication failed"), err, h.log)
 			return
 		}
@@ -365,10 +360,12 @@ func (h *MemberMoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	key := h.eh.root + ETCD_SERVICE_META + "/" + data.Service
 	msg, err := h.eh.Get(key)
 	if err != nil {
+		h.log.Error("Member move get service: %s failed", data.Service)
 		api.ReturnError(r, w, errors.Jerror("Cannot check service with backend"), errors.BadGatewayError, h.log)
 		return
 	}
 	if msg == nil {
+		h.log.Info("Member move service: %s not exist", data.Service)
 		api.ReturnError(r, w, errors.Jerror("Service not exist"), errors.NoContentError, h.log)
 		return
 	}
@@ -378,10 +375,12 @@ func (h *MemberMoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		key = h.eh.root + ETCD_GROUP_META + "/" + data.Service + "/" + data.From
 		msg, err = h.eh.Get(key)
 		if err != nil {
+			h.log.Error("Member move get source group: %s failed", data.From)
 			api.ReturnError(r, w, errors.Jerror("Cannot check service with backend"), errors.BadGatewayError, h.log)
 			return
 		}
 		if msg == nil {
+			h.log.Info("Member move source group: %s not exist", data.From)
 			api.ReturnError(r, w, errors.Jerror("Group in from not exist"), errors.NoContentError, h.log)
 			return
 		}
@@ -392,10 +391,12 @@ func (h *MemberMoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		key = h.eh.root + ETCD_GROUP_META + "/" + data.Service + "/" + data.To
 		msg, err = h.eh.Get(key)
 		if err != nil {
+			h.log.Error("Member move get dest group: %s failed", data.To)
 			api.ReturnError(r, w, errors.Jerror("Cannot check service with backend"), errors.BadGatewayError, h.log)
 			return
 		}
 		if msg == nil {
+			h.log.Info("Member move dest group: %s not exist", data.To)
 			api.ReturnError(r, w, errors.Jerror("Group in to not exist"), errors.NoContentError, h.log)
 			return
 		}
@@ -405,10 +406,12 @@ func (h *MemberMoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	key = h.eh.root + ETCD_GROUP_VIEW + "/" + data.Service + ETCD_GROUP_ALL + "/" + data.Ip
 	msg, err = h.eh.Get(key)
 	if err != nil {
+		h.log.Error("Member move get ip: %s from group all failed", data.Ip)
 		api.ReturnError(r, w, errors.Jerror("Cannot check host with backend"), errors.BadGatewayError, h.log)
 		return
 	}
 	if msg == nil {
+			h.log.Info("Member move ip: %s not exist", data.Ip)
 		api.ReturnError(r, w, errors.Jerror("Member move ip not exist"), errors.NoContentError, h.log)
 		return
 	}
@@ -417,6 +420,7 @@ func (h *MemberMoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	key = h.eh.root + ETCD_GROUP_VIEW + "/" + data.Service + "/" + data.From + "/" + data.Ip
 	err = h.eh.UnSet(key)
 	if err != nil {
+		h.log.Error("Member move unset key: %s failed", key)
 		api.ReturnError(r, w, errors.Jerror("Member move delete from source group failed"), errors.BadGatewayError, h.log)
 		return
 	}
@@ -425,6 +429,7 @@ func (h *MemberMoveHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	key = h.eh.root + ETCD_GROUP_VIEW + "/" + data.Service + "/" + data.To + "/" + data.Ip
 	err = h.eh.Set(key, ETCD_IP_PADDING)
 	if err != nil {
+		h.log.Error("Member move set key: %s failed", key)
 		api.ReturnError(r, w, errors.Jerror("Member move delete from source group failed"), errors.BadGatewayError, h.log)
 		return
 	}

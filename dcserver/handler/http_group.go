@@ -1,12 +1,10 @@
 package handler
 import (
-	//"time"
 	"strings"
 	"io/ioutil"
 	"encoding/json"
 	"net/http"
 	"github.com/gwtony/gapi/log"
-	//"github.com/gwtony/gapi/utils"
 	"github.com/gwtony/gapi/api"
 	"github.com/gwtony/gapi/errors"
 )
@@ -58,11 +56,11 @@ func (h *GroupAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.log.Info("Group add request: (%s) from client: %s", string(result), r.RemoteAddr)
 
 	//check args
-	if data.Service == "" {
+	if data.Service == "" || strings.Contains(data.Service, "/") {
 		api.ReturnError(r, w, errors.Jerror("Service invalid"), errors.BadRequestError, h.log)
 		return
 	}
-	if data.Group == "" {
+	if data.Group == "" || strings.Contains(data.Group, "/") {
 		api.ReturnError(r, w, errors.Jerror("Group invalid"), errors.BadRequestError, h.log)
 		return
 	}
@@ -70,11 +68,10 @@ func (h *GroupAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		api.ReturnError(r, w, errors.Jerror("Description invalid"), errors.BadRequestError, h.log)
 		return
 	}
-	if strings.Compare(data.Group, "default") == 0 || strings.Compare(data.Group, "all") == 0 {
+	if data.Group == "default" || data.Group == "all" {
 		api.ReturnError(r, w, errors.Jerror("Group name invalid"), errors.BadRequestError, h.log)
 		return
 	}
-	//TODO: group should not be "default" or "all"
 
 	// check admin
 	admin := IsAdmin(r)
@@ -92,10 +89,12 @@ func (h *GroupAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	key := h.eh.root + ETCD_SERVICE_META + "/" + data.Service
 	msg, err := h.eh.Get(key)
 	if err != nil {
+		h.log.Error("Group add check service: %s failed", data.Service)
 		api.ReturnError(r, w, errors.Jerror("Cannot check service with backend"), errors.BadGatewayError, h.log)
 		return
 	}
 	if msg == nil {
+		h.log.Info("Group add check service: %s not exist", data.Service)
 		api.ReturnError(r, w, errors.Jerror("Service not exist"), errors.NoContentError, h.log)
 		return
 	}
@@ -104,26 +103,21 @@ func (h *GroupAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	key = h.eh.root + ETCD_GROUP_META + "/" + data.Service + "/" + data.Group
 	msg, err = h.eh.Get(key)
 	if err != nil {
+		h.log.Error("Group add check group: %s meta failed", data.Group)
 		api.ReturnError(r, w, errors.Jerror("Cannot check group with backend"), errors.BadGatewayError, h.log)
 		return
 	}
 	if msg != nil {
-		api.ReturnError(r, w, errors.Jerror("Group exist"), errors.NoContentError, h.log)
+		h.log.Info("Group add check group: %s already exists", data.Group)
+		api.ReturnError(r, w, errors.Jerror("Group exist"), errors.ConflictError, h.log)
 		return
 	}
-
-	////set srv view
-	//key = h.eh.root + ETCD_SERVICE_VIEW + "/" + data.Service + "/" + data.Group
-	//err = h.eh.SetDir(key, "") //TODO: set dir no padding ?
-	//if err != nil {
-	//	api.ReturnError(r, w, errors.Jerror("Add group to backend failed"), errors.BadGatewayError, h.log)
-	//	return
-	//}
 
 	//set group meta
 	key = h.eh.root + ETCD_GROUP_META + "/" + data.Service + "/" + data.Group
 	err = h.eh.Set(key, string(result))
 	if err != nil {
+		h.log.Error("Group add set group: %s meta failed", data.Group)
 		api.ReturnError(r, w, errors.Jerror("Add group to backend failed"), errors.BadGatewayError, h.log)
 		return
 	}
@@ -162,7 +156,7 @@ func (h *GroupDeleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		api.ReturnError(r, w, errors.Jerror("Group invalid"), errors.BadRequestError, h.log)
 		return
 	}
-	if strings.Compare(data.Group, "default") == 0 || strings.Compare(data.Group, "all") == 0 {
+	if data.Group == "default" || data.Group == "all" {
 		api.ReturnError(r, w, errors.Jerror("Group name invalid"), errors.BadRequestError, h.log)
 		return
 	}
@@ -182,10 +176,12 @@ func (h *GroupDeleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	key := h.eh.root + ETCD_SERVICE_META + "/" + data.Service
 	msg, err := h.eh.Get(key)
 	if err != nil {
+		h.log.Error("Group delete check service: %s failed", data.Service)
 		api.ReturnError(r, w, errors.Jerror("Cannot check service with backend"), errors.BadGatewayError, h.log)
 		return
 	}
 	if msg == nil {
+		h.log.Info("Group delete check service: %s not exist", data.Service)
 		api.ReturnError(r, w, errors.Jerror("Service not exist"), errors.NoContentError, h.log)
 		return
 	}
@@ -194,23 +190,27 @@ func (h *GroupDeleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	key = h.eh.root + ETCD_GROUP_META + "/" + data.Service + "/" + data.Group
 	msg, err = h.eh.Get(key)
 	if err != nil {
+		h.log.Error("Group delete check group: %s failed", data.Group)
 		api.ReturnError(r, w, errors.Jerror("Cannot check group with backend"), errors.BadGatewayError, h.log)
 		return
 	}
 	if msg == nil {
+		h.log.Info("Group delete check group %s not exist", data.Group)
 		api.ReturnError(r, w, errors.Jerror("Group not exist"), errors.NoContentError, h.log)
 		return
 	}
 
-	//TODO: Group is empty
+	// check group empty
 	key = h.eh.root + ETCD_GROUP_VIEW + "/" + data.Service + "/" + data.Group
 	msga, err := h.eh.GetWithPrefix(key)
 	if err != nil {
+		h.log.Error("Group delete check group get key: %s failed", key)
 		api.ReturnError(r, w, errors.Jerror("Cannot check group ip with backend"), errors.BadGatewayError, h.log)
 		return
 	}
 	if len(msga) > 0 {
-		api.ReturnError(r, w, errors.Jerror("Group ip not exist"), errors.NoContentError, h.log)
+		h.log.Info("Group delete check group: %s is not empty", data.Group)
+		api.ReturnError(r, w, errors.Jerror("Group is not empty"), errors.NoContentError, h.log)
 		return
 	}
 
@@ -218,14 +218,16 @@ func (h *GroupDeleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	key = h.eh.root + ETCD_GROUP_VIEW + "/" + data.Service + "/" + data.Group
 	err = h.eh.UnSetDir(key) //unset dir
 	if err != nil {
+		h.log.Error("Group delete unsetdir group: %s view failed", data.Group)
 		api.ReturnError(r, w, errors.Jerror("Delete group to backend"), errors.BadGatewayError, h.log)
 		return
 	}
 
 	// delete service view dir
 	key = h.eh.root + ETCD_SERVICE_VIEW + "/" + data.Service + "/" + data.Group
-	err = h.eh.UnSetDir(key) //unset dir
+	err = h.eh.UnSetDir(key)
 	if err != nil {
+		h.log.Error("Group delete unsetdir service: %s view failed", data.Service)
 		api.ReturnError(r, w, errors.Jerror("Delete group to backend"), errors.BadGatewayError, h.log)
 		return
 	}
@@ -234,6 +236,7 @@ func (h *GroupDeleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	key = h.eh.root + ETCD_GROUP_META + "/" + data.Service + "/" + data.Group
 	err = h.eh.UnSet(key)
 	if err != nil {
+		h.log.Error("Group delete unset group: %s meta failed", data.Service)
 		api.ReturnError(r, w, errors.Jerror("Add group to backend failed"), errors.BadGatewayError, h.log)
 		return
 	}
@@ -264,11 +267,11 @@ func (h *GroupUpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.log.Info("Group update request: (%s) from client: %s", string(result), r.RemoteAddr)
 
 	//check args
-	if data.Service == "" {
+	if data.Service == "" || strings.Contains(data.Service, "/") {
 		api.ReturnError(r, w, errors.Jerror("Service invalid"), errors.BadRequestError, h.log)
 		return
 	}
-	if data.Group == "" {
+	if data.Group == "" || strings.Contains(data.Group, "/") {
 		api.ReturnError(r, w, errors.Jerror("Group invalid"), errors.BadRequestError, h.log)
 		return
 	}
@@ -276,7 +279,7 @@ func (h *GroupUpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		api.ReturnError(r, w, errors.Jerror("Description invalid"), errors.BadRequestError, h.log)
 		return
 	}
-	if strings.Compare(data.Group, "default") == 0 || strings.Compare(data.Group, "all") == 0 {
+	if data.Group == "default" || data.Group == "all" {
 		api.ReturnError(r, w, errors.Jerror("Group name invalid"), errors.BadRequestError, h.log)
 		return
 	}
@@ -294,14 +297,15 @@ func (h *GroupUpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//check service
-	//key := h.eh.root + ETCD_SERVICE_VIEW + "/" + data.Service
 	key := h.eh.root + ETCD_SERVICE_META + "/" + data.Service
 	msg, err := h.eh.Get(key)
 	if err != nil {
+		h.log.Error("Group update check service: %s meta failed", data.Service)
 		api.ReturnError(r, w, errors.Jerror("Cannot check service with backend"), errors.BadGatewayError, h.log)
 		return
 	}
 	if msg == nil {
+		h.log.Info("Group update check service: %s not exist", data.Service)
 		api.ReturnError(r, w, errors.Jerror("Service not exist"), errors.NoContentError, h.log)
 		return
 	}
@@ -310,10 +314,12 @@ func (h *GroupUpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	key = h.eh.root + ETCD_GROUP_META + "/" + data.Service + "/" + data.Group
 	msg, err = h.eh.Get(key)
 	if err != nil {
+		h.log.Error("Group update check group: %s meta failed", data.Group)
 		api.ReturnError(r, w, errors.Jerror("Cannot check group with backend"), errors.BadGatewayError, h.log)
 		return
 	}
 	if msg == nil {
+		h.log.Info("Group update check group: %s not exist", data.Group)
 		api.ReturnError(r, w, errors.Jerror("Group not exist"), errors.NoContentError, h.log)
 		return
 	}
@@ -322,6 +328,7 @@ func (h *GroupUpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	key = h.eh.root + ETCD_GROUP_META + "/" + data.Service + "/" + data.Group
 	err = h.eh.Set(key, string(result))
 	if err != nil {
+		h.log.Error("Group update set group: %s meta failed", data.Group)
 		api.ReturnError(r, w, errors.Jerror("Add group to backend failed"), errors.BadGatewayError, h.log)
 		return
 	}
@@ -376,10 +383,12 @@ func (h *GroupReadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	key := h.eh.root + ETCD_GROUP_META + "/" + data.Service + "/" + data.Group
 	msg, err := h.eh.Get(key)
 	if err != nil {
+		h.log.Error("Group read get group: %s meta failed", data.Group)
 		api.ReturnError(r, w, errors.Jerror("Cannot check group with backend"), errors.BadGatewayError, h.log)
 		return
 	}
 	if msg == nil {
+		h.log.Info("Group read check group: %s not exist", data.Group)
 		api.ReturnError(r, w, errors.Jerror("Group not exist"), errors.NoContentError, h.log)
 		return
 	}
@@ -387,7 +396,7 @@ func (h *GroupReadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	gm := &GroupMessage{}
 	err = json.Unmarshal([]byte(msg.Value), &gm)
 	if err != nil {
-		h.log.Error("Group read unmarshal for: %s.%s failed", data.Service, data.Group)
+		h.log.Error("Group read unmarshal for: %s/%s failed", data.Service, data.Group)
 		api.ReturnError(r, w, errors.Jerror("Unmarshal failed"), errors.InternalServerError, h.log)
 		return
 	}
@@ -440,10 +449,12 @@ func (h *GroupListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	key := h.eh.root + ETCD_GROUP_META + "/" + data.Service
 	msg, err := h.eh.GetWithPrefix(key)
 	if err != nil {
+		h.log.Error("Group list get with prefix service: %s failed", data.Service)
 		api.ReturnError(r, w, errors.Jerror("Cannot check group with backend"), errors.BadGatewayError, h.log)
 		return
 	}
 	if msg == nil {
+		h.log.Info("Group list no group in service: %s", data.Service)
 		api.ReturnError(r, w, errors.Jerror("No group in service"), errors.NoContentError, h.log)
 		return
 	}
@@ -454,11 +465,11 @@ func (h *GroupListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		gm := &GroupMessage{}
 		err = json.Unmarshal([]byte(m.Value), &gm)
 		if err != nil {
-			h.log.Error("Group list unmarshal for: %s.%s failed", data.Service, data.Group)
+			h.log.Error("Group list unmarshal for: %s/%s failed", data.Service, data.Group)
 			api.ReturnError(r, w, errors.Jerror("Unmarshal failed"), errors.InternalServerError, h.log)
 			return
 		}
-		if gm.Group == "all" || gm.Group == "default" { //ignore 'all' and default
+		if gm.Group == "all" || gm.Group == "default" { //ignore "all" and "default"
 			continue
 		}
 		gmm := &GroupMeta{Group: gm.Group, Description: gm.Description}

@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"github.com/gwtony/gapi/log"
-	//"github.com/gwtony/gapi/utils"
 	"github.com/gwtony/gapi/api"
 	"github.com/gwtony/gapi/errors"
 )
@@ -49,11 +48,11 @@ func (h *RenderDoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	h.log.Info("Render do request: (%s) from client: %s", string(result), r.RemoteAddr)
 
-	if data.Service == "" {
+	if data.Service == "" || strings.Contains(data.Service, "/") {
 		api.ReturnError(r, w, errors.Jerror("Service invalid"), errors.BadRequestError, h.log)
 		return
 	}
-	if data.Group == "" {
+	if data.Group == "" || strings.Contains(data.Group, "/") {
 		api.ReturnError(r, w, errors.Jerror("Group invalid"), errors.BadRequestError, h.log)
 		return
 	}
@@ -71,7 +70,7 @@ func (h *RenderDoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !admin {
 		ok, err := CheckToken(r, h.eh, data.Service)
 		if !ok {
-			h.log.Error("Render do token not match")
+			h.log.Info("Render do token not match")
 			api.ReturnError(r, w, errors.Jerror("Authentication failed"), err, h.log)
 			return
 		}
@@ -85,10 +84,12 @@ func (h *RenderDoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	key := h.eh.root + ETCD_SERVICE_VIEW + "/" + data.Service + "/" + data.Group + "/" + data.Key
 	kmsg, err := h.eh.Get(key)
 	if err != nil {
+		h.log.Error("Render do get key: %s faild", key)
 		api.ReturnError(r, w, errors.Jerror("Cannot check host with backend"), errors.BadGatewayError, h.log)
 		return
 	}
 	if kmsg == nil {
+		h.log.Info("Render do key: %s not exist", key)
 		api.ReturnError(r, w, errors.Jerror("Render do key not exist"), errors.NoContentError, h.log)
 		return
 	}
@@ -96,17 +97,21 @@ func (h *RenderDoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	key = h.eh.root + ETCD_GROUP_VIEW + "/" + data.Service + "/" + data.Group
 	gmsg, err := h.eh.GetWithPrefix(key)
 	if err != nil {
+		h.log.Error("Render do get with prefix key: %s faild", key)
 		api.ReturnError(r, w, errors.Jerror("Render do get ip faild"), errors.BadGatewayError, h.log)
 		return
 	}
 	if gmsg == nil {
+		h.log.Info("Render do no ip in group: %s", data.Group)
 		api.ReturnError(r, w, errors.Jerror("Render do no ip in group"), errors.NoContentError, h.log)
 		return
 	}
 
 	for _, m := range gmsg {
 		arr := strings.Split(string(m.Key), "/")
-		ip = arr[len(arr) - 1]
+		// key can contain "/"
+		//ip = arr[len(arr) - 1]
+		ip = strings.Join(arr[5:], "/")
 		key = h.eh.root + ETCD_HOST_VIEW + "/" + ip + "/" + data.Service + "/" + data.Key
 		err = h.eh.Set(key, string(kmsg.Value))
 		if err != nil {
@@ -179,17 +184,21 @@ func (h *RenderReadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		key = h.eh.root + ETCD_HOST_VIEW + "/" + data.Ip + "/" + data.Service + "/"
 		msg, err := h.eh.GetWithPrefix(key)
 		if err != nil {
+			h.log.Error("Render read get with prefix key: %s faild", key)
 			api.ReturnError(r, w, errors.Jerror("Cannot read render with backend"), errors.BadGatewayError, h.log)
 			return
 		}
 		if msg == nil {
-			api.ReturnError(r, w, errors.Jerror("No service in render"), errors.NoContentError, h.log)
+			h.log.Info("Render read no service: %s in ip: %s", data.Service, data.Ip)
+			api.ReturnError(r, w, errors.Jerror("No service in this ip"), errors.NoContentError, h.log)
 			return
 		}
 		rr.Result = make([]*RenderReadMeta, 0, len(msg))
 		for _, m := range msg {
 			arr := strings.Split(m.Key, "/")
-			rrm := &RenderReadMeta{Key: arr[len(arr) - 1], Value: m.Value}
+			// key can contain "/"
+			//rrm := &RenderReadMeta{Key: arr[len(arr) - 1], Value: m.Value}
+			rrm := &RenderReadMeta{Key: strings.Join(arr[5:], "/"), Value: m.Value}
 			rr.Result = append(rr.Result, rrm)
 		}
 
@@ -197,10 +206,12 @@ func (h *RenderReadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		key = h.eh.root + ETCD_HOST_VIEW + "/" + data.Ip + "/" + data.Service + "/" + data.Key
 		msg, err := h.eh.Get(key)
 		if err != nil {
-			api.ReturnError(r, w, errors.Jerror("Cannot check host with backend"), errors.BadGatewayError, h.log)
+			h.log.Error("Render read get key: %s faild", key)
+			api.ReturnError(r, w, errors.Jerror("Cannot check ip with backend"), errors.BadGatewayError, h.log)
 			return
 		}
 		if msg == nil {
+			h.log.Info("Render read key: %s not exist", data.Key)
 			api.ReturnError(r, w, errors.Jerror("Render read key not exist"), errors.NoContentError, h.log)
 			return
 		}
@@ -253,7 +264,7 @@ func (h *RenderDeleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	if !admin {
 		ok, err := CheckToken(r, h.eh, data.Service)
 		if !ok {
-			h.log.Error("Render delete token not match")
+			h.log.Info("Render delete token not match")
 			api.ReturnError(r, w, errors.Jerror("Authentication failed"), err, h.log)
 			return
 		}
@@ -262,7 +273,8 @@ func (h *RenderDeleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	key := h.eh.root + ETCD_HOST_VIEW + "/" + data.Ip + "/" + data.Service + "/" + data.Key
 	err = h.eh.UnSet(key)
 	if err != nil {
-		api.ReturnError(r, w, errors.Jerror("Cannot check host with backend"), errors.BadGatewayError, h.log)
+		h.log.Error("Render delete unset key: %s faild", key)
+		api.ReturnError(r, w, errors.Jerror("Cannot delete key with backend"), errors.BadGatewayError, h.log)
 		return
 	}
 

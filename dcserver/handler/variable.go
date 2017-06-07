@@ -76,4 +76,7 @@ const (
 	RENDER_DO_LOC           = "/render/do"
 	RENDER_READ_LOC         = "/render/read"
 	RENDER_DELETE_LOC       = "/render/delete"
+
+	//limited size
+	MAX_VALUE_SIZE          = 4096
 )

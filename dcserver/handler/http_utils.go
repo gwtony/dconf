@@ -1,19 +1,13 @@
 package handler
 import (
-	//"time"
-	"strings"
-	//"io/ioutil"
 	"encoding/json"
 	"net/http"
-	//"github.com/gwtony/gapi/log"
-	//"github.com/gwtony/gapi/utils"
-	//"github.com/gwtony/gapi/api"
 	"github.com/gwtony/gapi/errors"
 )
 
 func IsAdmin(r *http.Request) bool {
 	if r.Header[ADMIN_TOKEN_HEADER] != nil {
-		if (strings.Compare(r.Header[ADMIN_TOKEN_HEADER][0], AdminToken) == 0) {
+		if r.Header[ADMIN_TOKEN_HEADER][0] == AdminToken {
 			return true
 		}
 	}
@@ -22,6 +16,7 @@ func IsAdmin(r *http.Request) bool {
 
 func CheckToken(r *http.Request, eh *EtcdHandler, service string) (bool, error){
 	if r.Header[USER_TOKEN_HEADER] == nil {
+		eh.log.Debug("No user token header")
 		return false, errors.UnauthorizedError
 	}
 
@@ -34,7 +29,7 @@ func CheckToken(r *http.Request, eh *EtcdHandler, service string) (bool, error){
 		return false, errors.BadGatewayError
 	}
 	if msg == nil {
-		eh.log.Error("Token key: %s not exists", key)
+		eh.log.Info("Token key: %s not exists", key)
 		return false, errors.NotAcceptableError
 	}
 	sm := &ServiceMessage{}
@@ -44,8 +39,8 @@ func CheckToken(r *http.Request, eh *EtcdHandler, service string) (bool, error){
 		return false, errors.InternalServerError
 	}
 
-	if strings.Compare(sm.Token, token) != 0 {
-		eh.log.Error("Token not match")
+	if sm.Token != token {
+		eh.log.Debug("Token not match")
 		return false, errors.UnauthorizedError
 	}
 

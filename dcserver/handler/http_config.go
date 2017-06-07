@@ -1,12 +1,10 @@
 package handler
 import (
-	//"time"
 	"strings"
 	"io/ioutil"
 	"encoding/json"
 	"net/http"
 	"github.com/gwtony/gapi/log"
-	//"github.com/gwtony/gapi/utils"
 	"github.com/gwtony/gapi/api"
 	"github.com/gwtony/gapi/errors"
 )
@@ -58,11 +56,11 @@ func (h *ConfigAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.log.Info("Config add request: (%s) from client: %s", string(result), r.RemoteAddr)
 
 	//check args
-	if data.Service == "" {
+	if data.Service == "" || strings.Contains(data.Service, "/") {
 		api.ReturnError(r, w, errors.Jerror("Service invalid"), errors.BadRequestError, h.log)
 		return
 	}
-	if data.Group == "" {
+	if data.Group == "" || strings.Contains(data.Group, "/") {
 		api.ReturnError(r, w, errors.Jerror("Group invalid"), errors.BadRequestError, h.log)
 		return
 	}
@@ -74,8 +72,15 @@ func (h *ConfigAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		api.ReturnError(r, w, errors.Jerror("Value invalid"), errors.BadRequestError, h.log)
 		return
 	}
-	if strings.Compare(data.Group, "all") == 0 {
+
+	// group "all" should not set config
+	if data.Group == "all"{
 		api.ReturnError(r, w, errors.Jerror("Group name invalid"), errors.BadRequestError, h.log)
+		return
+	}
+	// config value should less than MAX_VALUE_SIZE(4k)
+	if len(data.Value) > MAX_VALUE_SIZE {
+		api.ReturnError(r, w, errors.Jerror("Value size too big"), errors.BadRequestError, h.log)
 		return
 	}
 
@@ -83,24 +88,22 @@ func (h *ConfigAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !IsAdmin(r) {
 		ok, err := CheckToken(r, h.eh, data.Service)
 		if !ok {
-			h.log.Error("Config add token not match")
 			api.ReturnError(r, w, errors.Jerror("Authentication failed"), err, h.log)
 			return
 		}
 	}
 
 	// check group
-	//key := h.eh.root + "/" + data.Service + "/" + data.Group
 	if data.Group != "default" {
 		key := h.eh.root + ETCD_GROUP_META + "/" + data.Service + "/" + data.Group
 		msg, err := h.eh.Get(key)
 		if err != nil {
-			h.log.Error("Config add get key %s failed", key)
+			h.log.Error("Config add check group get key: %s failed", key)
 			api.ReturnError(r, w, errors.Jerror("Cannot check group with backend"), errors.BadGatewayError, h.log)
 			return
 		}
 		if msg == nil {
-			h.log.Error("Config add group: %s not exists", data.Group)
+			h.log.Info("Config add group: %s not exists", data.Group)
 			api.ReturnError(r, w, errors.Jerror("Group not exist"), errors.NoContentError, h.log)
 			return
 		}
@@ -141,11 +144,11 @@ func (h *ConfigDeleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	h.log.Info("Config delete request: (%s) from client: %s", string(result), r.RemoteAddr)
 
 	//check args
-	if data.Service == "" {
+	if data.Service == "" || strings.Contains(data.Service, "/") {
 		api.ReturnError(r, w, errors.Jerror("Service invalid"), errors.BadRequestError, h.log)
 		return
 	}
-	if data.Group == "" {
+	if data.Group == "" || strings.Contains(data.Group, "/") {
 		api.ReturnError(r, w, errors.Jerror("Group invalid"), errors.BadRequestError, h.log)
 		return
 	}
@@ -158,7 +161,6 @@ func (h *ConfigDeleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	if !IsAdmin(r) {
 		ok, err := CheckToken(r, h.eh, data.Service)
 		if !ok {
-			h.log.Error("Config delete token not match")
 			api.ReturnError(r, w, errors.Jerror("Authentication failed"), err, h.log)
 			return
 		}
@@ -168,19 +170,19 @@ func (h *ConfigDeleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	key := h.eh.root + ETCD_SERVICE_VIEW + "/" + data.Service + "/" + data.Group + "/" + data.Key
 	msg, err := h.eh.Get(key)
 	if err != nil {
-		h.log.Error("Config delete get key %s failed", key)
+		h.log.Error("Config delete get key: %s failed", key)
 		api.ReturnError(r, w, errors.Jerror("Cannot check group with backend"), errors.BadGatewayError, h.log)
 		return
 	}
 	if msg == nil {
-		h.log.Error("Config delete key: %s not exists", key)
+		h.log.Info("Config delete key: %s not exists", key)
 		api.ReturnError(r, w, errors.Jerror("Group not exist"), errors.NoContentError, h.log)
 		return
 	}
 
 	err = h.eh.UnSet(key)
 	if err != nil {
-		h.log.Error("Config delete unset failed", err)
+		h.log.Error("Config delete unset key: %s failed", key)
 		api.ReturnError(r, w, errors.Jerror("Delete failed"), errors.BadGatewayError, h.log)
 		return
 	}
@@ -211,11 +213,11 @@ func (h *ConfigReadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.log.Info("Config read request: (%s) from client: %s", string(result), r.RemoteAddr)
 
 	//check args
-	if data.Service == "" {
+	if data.Service == "" || strings.Contains(data.Service, "/") {
 		api.ReturnError(r, w, errors.Jerror("Service invalid"), errors.BadRequestError, h.log)
 		return
 	}
-	if data.Group == "" {
+	if data.Group == "" || strings.Contains(data.Group, "/") {
 		api.ReturnError(r, w, errors.Jerror("Group invalid"), errors.BadRequestError, h.log)
 		return
 	}
@@ -228,7 +230,6 @@ func (h *ConfigReadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !IsAdmin(r) {
 		ok, err := CheckToken(r, h.eh, data.Service)
 		if !ok {
-			h.log.Error("Config read token not match")
 			api.ReturnError(r, w, errors.Jerror("Authentication failed"), err, h.log)
 			return
 		}
@@ -236,7 +237,7 @@ func (h *ConfigReadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	wildcard := false
 	wc := "*"
-	if strings.Compare(data.Key, wc) == 0 {
+	if data.Key == wc {
 		wildcard = true
 	}
 	// Need not to check group
@@ -249,12 +250,12 @@ func (h *ConfigReadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	msg, err := h.eh.GetWithPrefix(key)
 
 	if err != nil {
-		h.log.Error("Config read get failed", err)
+		h.log.Error("Config read get key: %s failed", key)
 		api.ReturnError(r, w, errors.Jerror("Read key from server failed"), errors.BadGatewayError, h.log)
 		return
 	}
 	if len(msg) == 0 {
-		h.log.Error("Config read key not found", err)
+		h.log.Info("Config read key: %s not found", key)
 		api.ReturnError(r, w, errors.Jerror("Key not found"), errors.NoContentError, h.log)
 		return
 	}
@@ -264,7 +265,9 @@ func (h *ConfigReadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ckv := &ConfigKV{}
 		h.log.Debug("key is %s", m.Key)
 		arr := strings.Split(m.Key, "/")
-		ckv.Key = arr[len(arr) - 1]
+		// key can contain "/"
+		//ckv.Key = arr[len(arr) - 1]
+		ckv.Key = strings.Join(arr[5:], "/")
 		ckv.Value = string(m.Value)
 		cr.Result = append(cr.Result, ckv)
 	}
@@ -296,11 +299,11 @@ func (h *ConfigUpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	h.log.Info("Config update request: (%s) from client: %s", string(result), r.RemoteAddr)
 
 	//check args
-	if data.Service == "" {
+	if data.Service == "" || strings.Contains(data.Service, "/") {
 		api.ReturnError(r, w, errors.Jerror("Service invalid"), errors.BadRequestError, h.log)
 		return
 	}
-	if data.Group == "" {
+	if data.Group == "" || strings.Contains(data.Group, "/") {
 		api.ReturnError(r, w, errors.Jerror("Group invalid"), errors.BadRequestError, h.log)
 		return
 	}
@@ -317,7 +320,6 @@ func (h *ConfigUpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	if !IsAdmin(r) {
 		ok, err := CheckToken(r, h.eh, data.Service)
 		if !ok {
-			h.log.Error("Config update token not match")
 			api.ReturnError(r, w, errors.Jerror("Authentication failed"), err, h.log)
 			return
 		}
@@ -327,12 +329,12 @@ func (h *ConfigUpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	key := h.eh.root + ETCD_SERVICE_VIEW + "/" + data.Service + "/" + data.Group + "/" + data.Key
 	msg, err := h.eh.Get(key)
 	if err != nil {
-		h.log.Error("Config update get key %s failed", key)
+		h.log.Error("Config update get key: %s failed", key)
 		api.ReturnError(r, w, errors.Jerror("Cannot check group with backend"), errors.BadGatewayError, h.log)
 		return
 	}
 	if msg == nil {
-		h.log.Error("Config update key: %s not exists", key)
+		h.log.Info("Config update key: %s not exists", key)
 		api.ReturnError(r, w, errors.Jerror("Group not exist"), errors.NoContentError, h.log)
 		return
 	}
@@ -372,15 +374,15 @@ func (h *ConfigCopyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.log.Info("Config copy request: (%s) from client: %s", string(result), r.RemoteAddr)
 
 	//check args
-	if data.Service == "" {
+	if data.Service == "" || strings.Contains(data.Service, "/") {
 		api.ReturnError(r, w, errors.Jerror("Service invalid"), errors.BadRequestError, h.log)
 		return
 	}
-	if data.From == "" {
+	if data.From == "" || strings.Contains(data.From, "/") {
 		api.ReturnError(r, w, errors.Jerror("From invalid"), errors.BadRequestError, h.log)
 		return
 	}
-	if data.To == "" {
+	if data.To == "" || strings.Contains(data.To, "/") {
 		api.ReturnError(r, w, errors.Jerror("To invalid"), errors.BadRequestError, h.log)
 		return
 	}
@@ -393,7 +395,6 @@ func (h *ConfigCopyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !IsAdmin(r) {
 		ok, err := CheckToken(r, h.eh, data.Service)
 		if !ok {
-			h.log.Error("Config copy token not match")
 			api.ReturnError(r, w, errors.Jerror("Authentication failed"), err, h.log)
 			return
 		}
@@ -403,19 +404,19 @@ func (h *ConfigCopyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	key := h.eh.root + ETCD_GROUP_META + "/" + data.Service + "/" + data.To
 	gmsg, err := h.eh.Get(key)
 	if err != nil {
-		h.log.Error("Config copy get group meta key %s failed", key)
+		h.log.Error("Config copy get group meta key: %s failed", key)
 		api.ReturnError(r, w, errors.Jerror("Cannot check group with backend"), errors.BadGatewayError, h.log)
 		return
 	}
 	if gmsg == nil {
-		h.log.Error("Config copy dest group: %s not exists", data.To)
+		h.log.Info("Config copy dest group: %s not exists", data.To)
 		api.ReturnError(r, w, errors.Jerror("Group to not exist"), errors.NoContentError, h.log)
 		return
 	}
 
 	wildcard := false
 	wc := "*"
-	if strings.Compare(data.Key, wc) == 0 {
+	if data.Key == wc {
 		wildcard = true
 	}
 
@@ -428,12 +429,12 @@ func (h *ConfigCopyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// get key from 
 	msg, err := h.eh.GetWithPrefix(key)
 	if err != nil {
-		h.log.Error("Config copy get copy key %s failed", key)
+		h.log.Error("Config copy get with prefix key: %s failed", key)
 		api.ReturnError(r, w, errors.Jerror("Cannot check group with backend"), errors.BadGatewayError, h.log)
 		return
 	}
 	if msg == nil {
-		h.log.Error("Config copy key: %s not exists", key)
+		h.log.Info("Config copy key: %s not exists", key)
 		api.ReturnError(r, w, errors.Jerror("Group not exist"), errors.NoContentError, h.log)
 		return
 	}
