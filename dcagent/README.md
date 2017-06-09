@@ -6,6 +6,7 @@ Dconf agent will watch config change from etcd
 Some config in file:
 * etcd_root: etcd root path, this should be matched with dcserver
 * api_location: agent http api location, default is '/dconf'
+* store_path: absolute path to store config, it is optional, if sets each config file will be stored there
 
 ## Build
 ```
