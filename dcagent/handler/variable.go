@@ -9,7 +9,7 @@ const (
 	ETCD_EVENT_PUT          = "PUT"
 	ETCD_EVENT_DELETE       = "DELETE"
 
-	DEFAULT_ADMIN_TOKEN     = "LCONF_TOKEN"
+	DEFAULT_ADMIN_TOKEN     = "DCONF_TOKEN"
 	ADMIN_TOKEN_HEADER      = "Admin-Token"
 	USER_TOKEN_HEADER       = "Conf-Token"
 

@@ -22,6 +22,7 @@ type DCAgentConfig struct {
 	apiLoc        string        /* dcagent api location */
 
 	localhost     string
+	store         string
 
 	timeout       time.Duration
 }
@@ -96,6 +97,12 @@ func (conf *DCAgentConfig) ParseConfig(cf *config.Config) error {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "[Error] [dcagent] Read conf: No host")
 		return err
+	}
+
+	conf.store, err = cf.C.GetString("dcagent", "store_path")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "[Info] [dcagent] Read conf: No store_path, do not store")
+		conf.store = ""
 	}
 
 	return nil

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"os"
 	"sync"
 	"strings"
 	"github.com/gwtony/gapi/log"
@@ -9,22 +10,40 @@ import (
 var DManager DictManager
 
 type DictManager struct {
-	lock   sync.RWMutex
-	host   string
-	prefix string
-	eh     *EtcdHandler
-	dict   map[string]string
-	log    log.Log
+	lock     sync.RWMutex
+	host     string
+	store    string
+	storable bool
+	prefix   string
+	eh       *EtcdHandler
+	dict     map[string]string
+	ch       chan ConfigMeta
+	log      log.Log
 }
 
-func InitDictManager(host string, eh *EtcdHandler, log log.Log) *DictManager {
+func InitDictManager(host string, eh *EtcdHandler, store string, log log.Log) (*DictManager, error) {
 	DManager.host = host
 	DManager.prefix = eh.root + ETCD_HOST_VIEW + "/" + host + "/"
 	DManager.eh = eh
 	DManager.log = log
 	DManager.dict = make(map[string]string, DEFAULT_DICT_SIZE)
+	DManager.store = store
+	if store != "" {
+		DManager.storable = true
+		_, err := os.Stat(store)
+		if os.IsNotExist(err) {
+			err = os.Mkdir(store, 0644)
+			if err != nil {
+				return nil, err
+			}
+		}
 
-	return &DManager
+		go DManager.runStorer()
+	}
+
+	DManager.ch = make(chan ConfigMeta, 100)
+
+	return &DManager, nil
 }
 
 func GetConfig(key string) string {
@@ -38,6 +57,56 @@ func GetConfig(key string) string {
 	return ""
 }
 
+func (dm *DictManager) runStorer() {
+	for {
+		select {
+		case cm := <-dm.ch:
+			dm.log.Debug("Got message: ", cm)
+
+			arr := strings.Split(cm.Key, "/")
+			dir := dm.store + "/" + arr[0]
+			_, err := os.Stat(dir)
+			if os.IsNotExist(err) {
+				err = os.Mkdir(dir, 0644)
+				if err != nil {
+					dm.log.Error("Storer mkdir %s failed", dir)
+					continue //TODO: next select
+				}
+			}
+
+			func () {
+				var f *os.File
+
+				name := dir + "/" + arr[1]
+				_, err := os.Stat(name)
+				if os.IsNotExist(err) {
+					f, err = os.Create(name)
+					if err != nil {
+						dm.log.Error("Create file: %s failed", name)
+						return
+					}
+				} else {
+					f, err = os.Open(name)
+					if err != nil {
+						dm.log.Error("Open file: %s failed", name)
+						return
+					}
+				}
+
+				defer f.Close()
+
+				n, err := f.Write([]byte(cm.Value))
+				if n != len(cm.Value) {
+					dm.log.Error("Write len error")
+					f.Close()
+					return
+				}
+				dm.log.Debug("Write %d to file %s", n, name)
+			}()
+		}
+	}
+}
+
 func (dm *DictManager) WatcherCallback(wm *WatchMessage) {
 	dm.log.Debug("Got a watch message", wm)
 
@@ -48,6 +117,10 @@ func (dm *DictManager) WatcherCallback(wm *WatchMessage) {
 	if wm.Type == ETCD_EVENT_PUT {
 		dm.log.Debug("Watch add event, key is %s", key)
 		dm.dict[key] = wm.Value
+		if dm.storable {
+			cfm := &ConfigMeta{Key: key, Value: wm.Value}
+			go func() {dm.ch <- *cfm}()
+		}
 	} else if wm.Type == ETCD_EVENT_DELETE {
 		dm.log.Debug("Watch delete event, key is %s", key)
 		if _, ok := dm.dict[key]; ok {
@@ -70,6 +143,7 @@ func (dm *DictManager) PullAll() error {
 	da, err := dm.eh.GetWithPrefix(dm.prefix)
 	if err != nil {
 		dm.log.Error("Pull all from etcd failed:", err)
+		//TODO: load from store dir
 		return err
 	}
 
@@ -81,6 +155,11 @@ func (dm *DictManager) PullAll() error {
 
 		dm.log.Debug("Got a key: %s", key)
 		dm.dict[key] = m.Value
+
+		if dm.storable {
+			cfm := &ConfigMeta{Key: key, Value: m.Value}
+			dm.ch <- *cfm
+		}
 	}
 
 	return nil

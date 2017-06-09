@@ -11,19 +11,21 @@ func InitContext(conf *config.Config, log log.Log) error {
 	cf := &DCAgentConfig{}
 	err := cf.ParseConfig(conf)
 	if err != nil {
-		log.Error("Lconf parse config failed")
+		log.Error("dcagent parse config failed")
 		return err
 	}
 
 	//Need not to auth
 	eh := InitEtcdHandler(cf.eaddr, cf.eto, "", "", false, cf.eRoot, log)
 
-	//dm := &DictManager{host: cf.localhost, eh: eh, log: log}
-	dm := InitDictManager(cf.localhost, eh, log)
+	dm, err := InitDictManager(cf.localhost, eh, cf.store, log)
+	if err != nil {
+		log.Error("Init dict manager failed")
+		return err
+	}
 	err = dm.PullAll()
 	if err != nil {
 		log.Error("Pull config from etcd failed:", err)
-		return err
 	}
 
 	go dm.Run()
