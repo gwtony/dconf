@@ -1,4 +1,4 @@
-# SCHEMA
+# API REFERENCE
 
 ## Service Management
 ### Add a service
