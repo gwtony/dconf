@@ -27,8 +27,8 @@ etcd_root: /dconf
 * -h help
 * -v version
 
-## Schema
-* [schema infomation](SCHEMA.md)
+## Api Reference
+* [api reference](REFERENCE.md)
 
 ## Dependency
 * [gapi](https://github.com/gwtony/gapi)
