@@ -64,7 +64,7 @@ func (h *ConfigAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		api.ReturnError(r, w, errors.Jerror("Group invalid"), errors.BadRequestError, h.log)
 		return
 	}
-	if data.Key == "" {
+	if data.Key == "" || strings.Contains(data.Key, "/") {
 		api.ReturnError(r, w, errors.Jerror("Key invalid"), errors.BadRequestError, h.log)
 		return
 	}
@@ -306,7 +306,7 @@ func (h *ConfigUpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		api.ReturnError(r, w, errors.Jerror("Group invalid"), errors.BadRequestError, h.log)
 		return
 	}
-	if data.Key == "" {
+	if data.Key == "" || strings.Contains(data.Key, "/") {
 		api.ReturnError(r, w, errors.Jerror("Key invalid"), errors.BadRequestError, h.log)
 		return
 	}

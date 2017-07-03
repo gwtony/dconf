@@ -40,6 +40,40 @@ func ConfigAdd2() string {
 	return ""
 }
 
+func ConfigAddSlash() string {
+	cm := lconf.ConfigMessage{}
+	cm.Service = "testservice"
+	cm.Group = "default"
+	cm.Key = "test_config/a/slash/key"
+	cm.Value = "test_config_value"
+	cmv, _ := json.Marshal(cm)
+	status, _, err := utils.SendRequest(lconf.CONFIG_ADD_LOC, string(cmv), "", true)
+	if err != nil {
+		return "request failed"
+	}
+	if status != 200 {
+		return "status is not 200"
+	}
+	return ""
+}
+
+func ConfigAddGroup() string {
+	cm := lconf.ConfigMessage{}
+	cm.Service = "testservice"
+	cm.Group = "testgroup"
+	cm.Key = "test_config_group"
+	cm.Value = "test_config_value_group"
+	cmv, _ := json.Marshal(cm)
+	status, _, err := utils.SendRequest(lconf.CONFIG_ADD_LOC, string(cmv), "", true)
+	if err != nil {
+		return "request failed"
+	}
+	if status != 200 {
+		return "status is not 200"
+	}
+	return ""
+}
+
 func ConfigUpdate() string {
 	cm := dconf.ConfigMessage{}
 	cm.Service = "testservice"
@@ -78,6 +112,36 @@ func ConfigRead() string {
 		return "unmarshal failed"
 	}
 	if cr.Result[0].Key != "test_config" {
+		return "read group is invalid"
+	}
+	if cr.Result[0].Value != "test_config_value" {
+		return "read ip is invalid"
+	}
+
+	return ""
+}
+
+func ConfigReadSlash() string {
+	cm := lconf.ConfigMessage{}
+	cm.Service = "testservice"
+	cm.Group = "default"
+	cm.Key = "test_config/a/slash/key"
+	cmv, _ := json.Marshal(cm)
+
+	status, resp, err := utils.SendRequest(lconf.CONFIG_READ_LOC, string(cmv), "", true)
+	if err != nil {
+		return "request failed"
+	}
+	if status != 200 {
+		return "status is not 200"
+	}
+
+	cr := lconf.ConfigReply{}
+	err = json.Unmarshal(resp, &cr)
+	if err != nil {
+		return "unmarshal failed"
+	}
+	if cr.Result[0].Key != "test_config/a/slash/key" {
 		return "read group is invalid"
 	}
 	if cr.Result[0].Value != "test_config_value" {
@@ -135,6 +199,24 @@ func ConfigReadNone() string {
 	return ""
 }
 
+func ConfigReadNoneSlash() string {
+	cm := lconf.ConfigMessage{}
+	cm.Service = "testservice"
+	cm.Group = "default"
+	cm.Key = "test_config/a/slash/key"
+	cmv, _ := json.Marshal(cm)
+
+	status, _, err := utils.SendRequest(lconf.CONFIG_READ_LOC, string(cmv), "", true)
+	if err != nil {
+		return "request failed"
+	}
+	if status != 204 {
+		return "status is not 204"
+	}
+
+	return ""
+}
+
 func ConfigDelete() string {
 	cm := dconf.ConfigMessage{}
 	cm.Service = "testservice"
@@ -161,6 +243,42 @@ func ConfigDelete2() string {
 	cmv, _ := json.Marshal(cm)
 
 	status, _, err := utils.SendRequest(dconf.CONFIG_DELETE_LOC, string(cmv), "", true)
+	if err != nil {
+		return "request failed"
+	}
+	if status != 200 {
+		return "status is not 200"
+	}
+
+	return ""
+}
+
+func ConfigDeleteSlash() string {
+	cm := lconf.ConfigMessage{}
+	cm.Service = "testservice"
+	cm.Group = "default"
+	cm.Key = "test_config/a/slash/key"
+	cmv, _ := json.Marshal(cm)
+
+	status, _, err := utils.SendRequest(lconf.CONFIG_DELETE_LOC, string(cmv), "", true)
+	if err != nil {
+		return "request failed"
+	}
+	if status != 200 {
+		return "status is not 200"
+	}
+
+	return ""
+}
+
+func ConfigDeleteGroup() string {
+	cm := lconf.ConfigMessage{}
+	cm.Service = "testservice"
+	cm.Group = "testgroup"
+	cm.Key = "test_config_group"
+	cmv, _ := json.Marshal(cm)
+
+	status, _, err := utils.SendRequest(lconf.CONFIG_DELETE_LOC, string(cmv), "", true)
 	if err != nil {
 		return "request failed"
 	}
@@ -306,16 +424,10 @@ func ConfigReadCopyWildcard() string {
 	if len(cr.Result) != 2 {
 		return "read copy wildcard len wrong"
 	}
-	if cr.Result[0].Key != "test_config" {
+	if cr.Result[0].Key != "test_config" && cr.Result[1].Key != "test_config" {
 		return "read key is invalid"
 	}
-	if cr.Result[0].Value != "test_config_value" {
-		return "read value is invalid"
-	}
-	if cr.Result[1].Key != "test_config2" {
-		return "read key is invalid"
-	}
-	if cr.Result[1].Value != "test_config_value2" {
+	if cr.Result[0].Value != "test_config_value" && cr.Result[1].Value != "test_config_value2" {
 		return "read value is invalid"
 	}
 

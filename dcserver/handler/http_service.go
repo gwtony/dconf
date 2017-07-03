@@ -48,11 +48,15 @@ func (h *ServiceAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	//check args
 	if data.Service == "" || strings.Contains(data.Service, "/") {
-		api.ReturnError(r, w, errors.Jerror("Service not exist"), errors.BadRequestError, h.log)
+		api.ReturnError(r, w, errors.Jerror("Service invalid"), errors.BadRequestError, h.log)
 		return
 	}
 	if data.Description == "" {
-		api.ReturnError(r, w, errors.Jerror("Description not exist"), errors.BadRequestError, h.log)
+		api.ReturnError(r, w, errors.Jerror("Description invalid"), errors.BadRequestError, h.log)
+		return
+	}
+	if utils.StringToBytes("_")[0] == data.Service[0] {
+		api.ReturnError(r, w, errors.Jerror("Service invalid"), errors.BadRequestError, h.log)
 		return
 	}
 
@@ -87,6 +91,21 @@ func (h *ServiceAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.log.Error("Service add set service meta key: %s failed", key)
 		api.ReturnError(r, w, errors.Jerror("Add service to backend failed"), errors.BadGatewayError, h.log)
+		return
+	}
+
+	//set group default meta
+	gm := &GroupMessage{
+		Service: data.Service,
+		Group: "default",
+		Description: "default group",
+	}
+	gmv, _ := json.Marshal(gm)
+	key = h.eh.root + ETCD_GROUP_META + "/" + data.Service + "/default"
+	err = h.eh.Set(key, string(gmv))
+	if err != nil {
+		h.log.Error("Service add set default group failed")
+		api.ReturnError(r, w, errors.Jerror("Add default group to backend failed"), errors.BadGatewayError, h.log)
 		return
 	}
 

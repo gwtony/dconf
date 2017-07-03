@@ -221,7 +221,7 @@ func (h *MemberReadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if data.Group == "" {
-		api.ReturnError(r, w, errors.Jerror("No ip"), errors.BadRequestError, h.log)
+		api.ReturnError(r, w, errors.Jerror("No group"), errors.BadRequestError, h.log)
 		return
 	}
 
@@ -279,6 +279,9 @@ func (h *MemberReadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, m := range msgarr {
 		//this is sorted
 		arr := strings.Split(m.Key, "/")
+		if arr[len(arr) - 2] == "all" { //skip group "all"
+			continue
+		}
 		if group == "" {
 			group = arr[len(arr) - 2]
 			mm.Group = group

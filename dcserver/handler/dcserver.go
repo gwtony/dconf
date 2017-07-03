@@ -1,7 +1,6 @@
 package handler
 
 import (
-	//"sync"
 	"github.com/gwtony/gapi/log"
 	"github.com/gwtony/gapi/api"
 	"github.com/gwtony/gapi/config"

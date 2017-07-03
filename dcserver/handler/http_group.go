@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"github.com/gwtony/gapi/log"
 	"github.com/gwtony/gapi/api"
+	"github.com/gwtony/gapi/utils"
 	"github.com/gwtony/gapi/errors"
 )
 
@@ -70,6 +71,10 @@ func (h *GroupAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	if data.Group == "default" || data.Group == "all" {
 		api.ReturnError(r, w, errors.Jerror("Group name invalid"), errors.BadRequestError, h.log)
+		return
+	}
+	if utils.StringToBytes("_")[0] == data.Group[0] {
+		api.ReturnError(r, w, errors.Jerror("Group invalid"), errors.BadRequestError, h.log)
 		return
 	}
 
@@ -283,6 +288,10 @@ func (h *GroupUpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		api.ReturnError(r, w, errors.Jerror("Group name invalid"), errors.BadRequestError, h.log)
 		return
 	}
+	if utils.StringToBytes("_")[0] == data.Group[0] {
+		api.ReturnError(r, w, errors.Jerror("Group invalid"), errors.BadRequestError, h.log)
+		return
+	}
 
 	// check admin
 	admin := IsAdmin(r)
@@ -469,7 +478,7 @@ func (h *GroupListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			api.ReturnError(r, w, errors.Jerror("Unmarshal failed"), errors.InternalServerError, h.log)
 			return
 		}
-		if gm.Group == "all" || gm.Group == "default" { //ignore "all" and "default"
+		if gm.Group == "all" { //ignore "all"
 			continue
 		}
 		gmm := &GroupMeta{Group: gm.Group, Description: gm.Description}

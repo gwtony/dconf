@@ -96,8 +96,41 @@ func RenderRead() string {
 func RenderReadWildcard() string {
 	cm := dconf.RenderReadMessage{}
 	cm.Service = "testservice"
+	cm.Ip = "1.1.1.2"
+	cm.Key = "test_config2"
+	cmv, _ := json.Marshal(cm)
+	status, resp, err := utils.SendRequest(lconf.RENDER_READ_LOC, string(cmv), "", true)
+	if err != nil {
+		return "request failed"
+	}
+	if status != 200 {
+		return "status is not 200"
+	}
+	if resp == nil {
+		return "return body failed"
+	}
+	rr := lconf.RenderReadReply{}
+	err = json.Unmarshal(resp, &rr)
+	if err != nil {
+		return "unmarshal failed"
+	}
+	if len(rr.Result) == 0 {
+		return "len invalid"
+	}
+	if rr.Result[0].Key != "test_config2" {
+		return "key not match"
+	}
+	if rr.Result[0].Value != "test_config_value2" {
+		return "value not match"
+	}
+	return ""
+}
+
+func RenderReadGroup() string {
+	cm := lconf.RenderReadMessage{}
+	cm.Service = "testservice"
 	cm.Ip = "1.1.1.1"
-	cm.Key = "*"
+	cm.Key = "test_config_group"
 	cmv, _ := json.Marshal(cm)
 	status, resp, err := utils.SendRequest(dconf.RENDER_READ_LOC, string(cmv), "", true)
 	if err != nil {
@@ -114,19 +147,50 @@ func RenderReadWildcard() string {
 	if err != nil {
 		return "unmarshal failed"
 	}
+	if len(rr.Result) == 0 {
+		return "len invalid"
+	}
+	if rr.Result[0].Key != "test_config_group" {
+		return "key not match"
+	}
+	if rr.Result[0].Value != "test_config_value_group" {
+		return "value not match"
+	}
+	return ""
+}
+
+func RenderReadWildcard() string {
+	cm := lconf.RenderReadMessage{}
+	cm.Service = "testservice"
+	cm.Ip = "1.1.1.1"
+	cm.Key = "*"
+	cmv, _ := json.Marshal(cm)
+	status, resp, err := utils.SendRequest(lconf.RENDER_READ_LOC, string(cmv), "", true)
+	if err != nil {
+		return "request failed"
+	}
+	if status != 200 {
+		return "status is not 200"
+	}
+	if resp == nil {
+		return "return body failed"
+	}
+	rr := lconf.RenderReadReply{}
+	err = json.Unmarshal(resp, &rr)
+	if err != nil {
+		return "unmarshal failed"
+	}
 	if len(rr.Result) != 2 {
 		return "len invalid"
 	}
-	if rr.Result[0].Key != "test_config" {
+	if (rr.Result[0].Key == "test_config" && rr.Result[1].Key == "test_config2") ||
+		(rr.Result[1].Key == "test_config" && rr.Result[0].Key == "test_config2") {
+	} else {
 		return "key not match"
 	}
-	if rr.Result[0].Value != "test_config_value" {
-		return "value not match"
-	}
-	if rr.Result[1].Key != "test_config2" {
-		return "key not match"
-	}
-	if rr.Result[1].Value != "test_config_value2" {
+	if (rr.Result[0].Value == "test_config_value" && rr.Result[1].Value == "test_config_value2") ||
+		(rr.Result[1].Value == "test_config_value" && rr.Result[0].Value == "test_config_value2") {
+	} else {
 		return "value not match"
 	}
 	return ""
@@ -139,6 +203,38 @@ func RenderDelete() string {
 	cm.Key = "test_config"
 	cmv, _ := json.Marshal(cm)
 	status, _, err := utils.SendRequest(dconf.RENDER_DELETE_LOC, string(cmv), "", true)
+	if err != nil {
+		return "request failed"
+	}
+	if status != 200 {
+		return "status is not 200"
+	}
+	return ""
+}
+
+func RenderDelete2() string {
+	cm := lconf.RenderDeleteMessage{}
+	cm.Service = "testservice"
+	cm.Ip = "1.1.1.2"
+	cm.Key = "test_config2"
+	cmv, _ := json.Marshal(cm)
+	status, _, err := utils.SendRequest(lconf.RENDER_DELETE_LOC, string(cmv), "", true)
+	if err != nil {
+		return "request failed"
+	}
+	if status != 200 {
+		return "status is not 200"
+	}
+	return ""
+}
+
+func RenderDeleteGroup() string {
+	cm := lconf.RenderDeleteMessage{}
+	cm.Service = "testservice"
+	cm.Ip = "1.1.1.1"
+	cm.Key = "test_config_group"
+	cmv, _ := json.Marshal(cm)
+	status, _, err := utils.SendRequest(lconf.RENDER_DELETE_LOC, string(cmv), "", true)
 	if err != nil {
 		return "request failed"
 	}
@@ -181,6 +277,22 @@ func RenderReadNone() string {
 	cm.Key = "test_config"
 	cmv, _ := json.Marshal(cm)
 	status, _, err := utils.SendRequest(dconf.RENDER_READ_LOC, string(cmv), "", true)
+	if err != nil {
+		return "request failed"
+	}
+	if status != 204 {
+		return "status is not 200"
+	}
+	return ""
+}
+
+func RenderReadGroupNone() string {
+	cm := lconf.RenderReadMessage{}
+	cm.Service = "testservice"
+	cm.Ip = "1.1.1.1"
+	cm.Key = "test_config_group"
+	cmv, _ := json.Marshal(cm)
+	status, _, err := utils.SendRequest(lconf.RENDER_READ_LOC, string(cmv), "", true)
 	if err != nil {
 		return "request failed"
 	}

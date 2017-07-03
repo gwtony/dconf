@@ -158,3 +158,30 @@ func TestConfigCopyWildcard(t *testing.T) {
 	}
 }
 
+func TestConfigAddReadDeleteSlash(t *testing.T) {
+	service.ServiceClean()
+	msg := service.ServiceAdd()
+	if msg != "" {
+		t.Fatal(msg)
+	}
+	msg = ConfigAddSlash()
+	if msg != "" {
+		t.Fatal(msg)
+	}
+	msg = ConfigReadSlash()
+	if msg != "" {
+		t.Fatal(msg)
+	}
+	msg = ConfigDeleteSlash()
+	if msg != "" {
+		t.Fatal(msg)
+	}
+	msg = ConfigReadNoneSlash()
+	if msg != "" {
+		t.Fatal(msg)
+	}
+	msg = service.ServiceDelete()
+	if msg != "" {
+		t.Fatal(msg)
+	}
+}

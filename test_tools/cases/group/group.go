@@ -135,7 +135,10 @@ func GroupList() string {
 		return "read no result"
 	}
 
-	if rmm.Result[0].Group != "testgroup" {
+	if rmm.Result[0].Group != "default" && rmm.Result[1].Group != "default" {
+		return "group wrong"
+	}
+	if rmm.Result[0].Group != "testgroup" && rmm.Result[1].Group != "testgroup" {
 		return "group wrong"
 	}
 

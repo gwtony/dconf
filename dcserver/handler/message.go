@@ -49,7 +49,7 @@ type RenderMessage struct {
 type RenderDeleteMessage RenderReadMessage
 type RenderReadMessage struct {
 	Service string `json:"service"`
-	Ip      string `json:"host"`
+	Ip      string `json:"ip"`
 	Key     string `json:"key"`
 }
 

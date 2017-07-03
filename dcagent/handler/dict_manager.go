@@ -32,8 +32,9 @@ func InitDictManager(host string, eh *EtcdHandler, store string, log log.Log) (*
 		DManager.storable = true
 		_, err := os.Stat(store)
 		if os.IsNotExist(err) {
-			err = os.Mkdir(store, 0644)
+			err = os.MkdirAll(store, 0755)
 			if err != nil {
+				log.Error("Mkdir in path: %s failed, ", store, err)
 				return nil, err
 			}
 		}
@@ -67,7 +68,7 @@ func (dm *DictManager) runStorer() {
 			dir := dm.store + "/" + arr[0]
 			_, err := os.Stat(dir)
 			if os.IsNotExist(err) {
-				err = os.Mkdir(dir, 0644)
+				err = os.Mkdir(dir, 0755)
 				if err != nil {
 					dm.log.Error("Storer mkdir %s failed", dir)
 					continue //TODO: next select
@@ -78,26 +79,22 @@ func (dm *DictManager) runStorer() {
 				var f *os.File
 
 				name := dir + "/" + arr[1]
-				_, err := os.Stat(name)
-				if os.IsNotExist(err) {
-					f, err = os.Create(name)
-					if err != nil {
-						dm.log.Error("Create file: %s failed", name)
-						return
-					}
-				} else {
-					f, err = os.Open(name)
-					if err != nil {
-						dm.log.Error("Open file: %s failed", name)
-						return
-					}
+				dm.log.Debug("Open path: %s", name)
+				f, err = os.OpenFile(name, os.O_RDWR | os.O_CREATE, 0755)
+				if err != nil {
+					dm.log.Error("Open file: %s failed", name)
+					return
 				}
 
 				defer f.Close()
 
 				n, err := f.Write([]byte(cm.Value))
+				if err != nil {
+					dm.log.Error("Write error: ", err)
+					return
+				}
 				if n != len(cm.Value) {
-					dm.log.Error("Write len error")
+					dm.log.Error("Write len error: %d", n)
 					f.Close()
 					return
 				}
@@ -125,6 +122,7 @@ func (dm *DictManager) WatcherCallback(wm *WatchMessage) {
 		dm.log.Debug("Watch delete event, key is %s", key)
 		if _, ok := dm.dict[key]; ok {
 			delete(dm.dict, key)
+			//TODO: delete file
 		}
 	} else {
 		dm.log.Debug("Watch invalid status, skip", wm.Type)

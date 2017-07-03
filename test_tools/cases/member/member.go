@@ -133,6 +133,7 @@ func MemberDelete1() string {
 func MemberDelete2() string {
 	mm := dconf.MemberMessage{}
 	mm.Service = "testservice"
+	mm.Group = "default"
 	mm.Ip = "1.1.1.2"
 	mmv, _ := json.Marshal(mm)
 	status, _, err := utils.SendRequest(dconf.MEMBER_DELETE_LOC, string(mmv), "", true)

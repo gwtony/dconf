@@ -62,18 +62,24 @@ func (conf *DCServerConfig) ParseConfig(cf *config.Config) error {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "[Info] [dcserver] Read conf: No api_location, use default location:", DCSERVER_LOC)
 		conf.apiLoc = DCSERVER_LOC
+	} else {
+		fmt.Fprintln(os.Stderr, "[Info] [dcserver] Read conf: api_location:", conf.apiLoc)
 	}
 
 	conf.adminToken, err = cf.C.GetString("dcserver", "admin_token")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "[Info] [dcserver] Read conf: No admin_token, use default admin token:", DEFAULT_ADMIN_TOKEN)
 		conf.adminToken = DEFAULT_ADMIN_TOKEN
+	} else {
+		fmt.Fprintln(os.Stderr, "[Info] [dcserver] Read conf: admin_token:", conf.adminToken)
 	}
 
 	conf.eRoot, err = cf.C.GetString("dcserver", "etcd_root")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "[Info] [dcserver] Read conf: No etcd_root, use default etcd root:", DEFAULT_ETCD_ROOT)
 		conf.eRoot = DEFAULT_ETCD_ROOT
+	} else {
+		fmt.Fprintln(os.Stderr, "[Info] [dcserver] Read conf: etcd_root:", conf.eRoot)
 	}
 
 	conf.euser, err = cf.C.GetString("dcserver", "etcd_user")
