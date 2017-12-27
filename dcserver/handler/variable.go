@@ -27,7 +27,7 @@ const (
 	DEFAULT_ETCD_ROOT       = "/dconf"
 
 	// ETCD table schema
-	ETCD_SERVICE_VIEW       = "/svc_view"
+	ETCD_SERVICE_VIEW       = "/srv_view"
 	ETCD_GROUP_VIEW         = "/group_view"
 	ETCD_HOST_VIEW          = "/host_view"
 	ETCD_TAG_VIEW           = "/tag_view"
