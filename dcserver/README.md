@@ -30,6 +30,9 @@ etcd_root: /dconf
 ## Api Reference
 * [api reference](REFERENCE.md)
 
+## Etcd Schema
+* [etcd schema](SCHEMA.md)
+
 ## Dependency
 * [gapi](https://github.com/gwtony/gapi)
 * [etcd clientv3](http://github.com/coreos/etcd/clientv3)
