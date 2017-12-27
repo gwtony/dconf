@@ -71,6 +71,16 @@ const (
 	RENDER_READ_LOC         = "/render/read"
 	RENDER_DELETE_LOC       = "/render/delete"
 
+	//http location for tag
+	TAG_ADD_LOC             = "/tag/add"
+	TAG_DELETE_LOC          = "/tag/delete"
+	TAG_READ_LOC            = "/tag/read"
+	TAG_INFO_LOC            = "/tag/info"
+	TAG_APPLY_LOC           = "/tag/apply"
+
 	//limited size
 	MAX_VALUE_SIZE          = 4096
+
+	// limited tag size
+	TAG_LIMIT_MAX           = 10
 )

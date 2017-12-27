@@ -34,6 +34,77 @@ type ConfigCopyHandler struct {
 	log log.Log
 }
 
+func AddConfig(eh *EtcdHandler, data *ConfigMessage, log log.Log) (rmsg, emsg string, err error) {
+	// check group
+	if data.Group != "default" {
+		key := eh.root + ETCD_GROUP_META + "/" + data.Service + "/" + data.Group
+		msg, err := eh.Get(key)
+		if err != nil {
+			log.Error("Config add check group get key: %s failed", key)
+			return "", "Cannot check group with backend", errors.BadGatewayError
+		}
+		if msg == nil {
+			log.Info("Config add group: %s not exists", data.Group)
+			return "", "Group not exist", errors.NoContentError
+		}
+	}
+
+	//set kv
+	key := eh.root + ETCD_SERVICE_VIEW + "/" + data.Service + "/" + data.Group + "/" + data.Key
+	err = eh.Set(key, string(data.Value))
+	if err != nil {
+		log.Error("Config add set key: %s failed", key)
+		return "", "Set config to backend failed", err
+	}
+	return "", "", nil
+}
+
+func DeleteConfig(eh *EtcdHandler, data *ConfigMessage, log log.Log) (rmsg, emsg string, err error) {
+	// Need not to check group
+	key := eh.root + ETCD_SERVICE_VIEW + "/" + data.Service + "/" + data.Group + "/" + data.Key
+	msg, err := eh.Get(key)
+	if err != nil {
+		log.Error("Config delete get key: %s failed", key)
+		return "", "Cannot check group with backend", errors.BadGatewayError
+	}
+	if msg == nil {
+		log.Info("Config delete key: %s not exists", key)
+		return "", "Group not exist", errors.NoContentError
+	}
+
+	err = eh.UnSet(key)
+	if err != nil {
+		log.Error("Config delete unset key: %s failed", key)
+		return "", "Delete failed", errors.BadGatewayError
+	}
+
+	return "", "", nil
+}
+
+func UpdateConfig(eh *EtcdHandler, data *ConfigMessage, log log.Log) (rmsg, emsg string, err error) {
+	// check key only
+	key := eh.root + ETCD_SERVICE_VIEW + "/" + data.Service + "/" + data.Group + "/" + data.Key
+	msg, err := eh.Get(key)
+	if err != nil {
+		log.Error("Config update get key: %s failed", key)
+		return "", "Cannot check group with backend", errors.BadGatewayError
+	}
+	if msg == nil {
+		log.Info("Config update key: %s not exists", key)
+		return "", "Group not exist", errors.NoContentError
+	}
+
+	//set kv
+	key = eh.root + ETCD_SERVICE_VIEW + "/" + data.Service + "/" + data.Group + "/" + data.Key
+	err = eh.Set(key, string(data.Value))
+	if err != nil {
+		log.Error("Config update set key: %s failed", key)
+		return "", "Set config to backend failed", err
+	}
+
+	return "", "", nil
+}
+
 func (h *ConfigAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		api.ReturnError(r, w, errors.Jerror("Method invalid"), errors.BadRequestError, h.log)
@@ -93,28 +164,9 @@ func (h *ConfigAddHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// check group
-	if data.Group != "default" {
-		key := h.eh.root + ETCD_GROUP_META + "/" + data.Service + "/" + data.Group
-		msg, err := h.eh.Get(key)
-		if err != nil {
-			h.log.Error("Config add check group get key: %s failed", key)
-			api.ReturnError(r, w, errors.Jerror("Cannot check group with backend"), errors.BadGatewayError, h.log)
-			return
-		}
-		if msg == nil {
-			h.log.Info("Config add group: %s not exists", data.Group)
-			api.ReturnError(r, w, errors.Jerror("Group not exist"), errors.NoContentError, h.log)
-			return
-		}
-	}
-
-	//set kv
-	key := h.eh.root + ETCD_SERVICE_VIEW + "/" + data.Service + "/" + data.Group + "/" + data.Key
-	err = h.eh.Set(key, string(data.Value))
+	_, emsg, err := AddConfig(h.eh, data, h.log)
 	if err != nil {
-		h.log.Error("Config add set key: %s failed", key)
-		api.ReturnError(r, w, errors.Jerror("Set config to backend failed"), err, h.log)
+		api.ReturnError(r, w, errors.Jerror(emsg), err, h.log)
 		return
 	}
 
@@ -166,24 +218,9 @@ func (h *ConfigDeleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	// Need not to check group
-	key := h.eh.root + ETCD_SERVICE_VIEW + "/" + data.Service + "/" + data.Group + "/" + data.Key
-	msg, err := h.eh.Get(key)
+	_, emsg, err := DeleteConfig(h.eh, data, h.log)
 	if err != nil {
-		h.log.Error("Config delete get key: %s failed", key)
-		api.ReturnError(r, w, errors.Jerror("Cannot check group with backend"), errors.BadGatewayError, h.log)
-		return
-	}
-	if msg == nil {
-		h.log.Info("Config delete key: %s not exists", key)
-		api.ReturnError(r, w, errors.Jerror("Group not exist"), errors.NoContentError, h.log)
-		return
-	}
-
-	err = h.eh.UnSet(key)
-	if err != nil {
-		h.log.Error("Config delete unset key: %s failed", key)
-		api.ReturnError(r, w, errors.Jerror("Delete failed"), errors.BadGatewayError, h.log)
+		api.ReturnError(r, w, errors.Jerror(emsg), err, h.log)
 		return
 	}
 
@@ -324,26 +361,9 @@ func (h *ConfigUpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	// check key only
-	key := h.eh.root + ETCD_SERVICE_VIEW + "/" + data.Service + "/" + data.Group + "/" + data.Key
-	msg, err := h.eh.Get(key)
+	_, emsg, err := AddConfig(h.eh, data, h.log)
 	if err != nil {
-		h.log.Error("Config update get key: %s failed", key)
-		api.ReturnError(r, w, errors.Jerror("Cannot check group with backend"), errors.BadGatewayError, h.log)
-		return
-	}
-	if msg == nil {
-		h.log.Info("Config update key: %s not exists", key)
-		api.ReturnError(r, w, errors.Jerror("Group not exist"), errors.NoContentError, h.log)
-		return
-	}
-
-	//set kv
-	key = h.eh.root + ETCD_SERVICE_VIEW + "/" + data.Service + "/" + data.Group + "/" + data.Key
-	err = h.eh.Set(key, string(data.Value))
-	if err != nil {
-		h.log.Error("Config update set key: %s failed", key)
-		api.ReturnError(r, w, errors.Jerror("Set config to backend failed"), err, h.log)
+		api.ReturnError(r, w, errors.Jerror(emsg), err, h.log)
 		return
 	}
 

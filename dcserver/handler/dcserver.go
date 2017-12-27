@@ -47,5 +47,11 @@ func InitContext(conf *config.Config, log log.Log) error {
 	api.AddHttpHandler(apiLoc + RENDER_READ_LOC, &RenderReadHandler{eh: eh, log: log})
 	api.AddHttpHandler(apiLoc + RENDER_DELETE_LOC, &RenderDeleteHandler{eh: eh, log: log})
 
+	api.AddHttpHandler(apiLoc + TAG_ADD_LOC, &TagAddHandler{eh: eh, log: log})
+	api.AddHttpHandler(apiLoc + TAG_DELETE_LOC, &TagDeleteHandler{eh: eh, log: log})
+	api.AddHttpHandler(apiLoc + TAG_READ_LOC, &TagReadHandler{eh: eh, log: log})
+	api.AddHttpHandler(apiLoc + TAG_INFO_LOC, &TagInfoHandler{eh: eh, log: log})
+	api.AddHttpHandler(apiLoc + TAG_APPLY_LOC, &TagApplyHandler{eh: eh, log: log})
+
 	return nil
 }

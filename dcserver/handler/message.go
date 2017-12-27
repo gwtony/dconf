@@ -97,3 +97,24 @@ type RenderReply struct {
 	Version string `json:"version"`
 }
 
+type TagRequest struct {
+	Tag     string `json:"tag"`
+	Service string `json:"service"`
+	Group   string `json:"group"`
+}
+
+type TagMeta struct {
+	Service string            `json:"service"`
+	Group   string            `json:"group"`
+	Tag     string            `json:"tag"`
+	Kv      map[string]string `json:"kv"`
+}
+
+type TagInfoRequest struct {
+	Service string   `json:"service"`
+	Group   string   `json:"group"`
+}
+
+type TagInfoReply struct {
+	Tags []string `json:"tags"`
+}
